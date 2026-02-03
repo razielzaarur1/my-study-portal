@@ -4,14 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>פורטל לימודים - רזיאל זערור</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
-            --primary: #2c3e50;
-            --accent: #3498db;
-            --bg: #f4f6f7;
-            --card-bg: #ffffff;
-            --text: #333;
+        body { font-family: sans-serif; background: #f4f6f7; text-align: center; padding: 20px; }
+        .btn { 
+            display: block; margin: 15px auto; padding: 15px; width: 80%; max-width: 300px;
+            background: #2c3e50; color: white; text-decoration: none; border-radius: 10px; font-weight: bold;
         }
+        .btn:hover { background: #3498db; }
+        h1 { color: #2c3e50; }
+    </style>
+</head>
+<body>
+    <h1>הפורטל של רזיאל</h1>
+    <p>בחר את הנושא שברצונך לתרגל:</p>
+    
+    <a href="linear.html" class="btn">
+        <i class="fas fa-calculator"></i> אלגברה לינארית
+    </a>
+
+    <a href="c-lang.html" class="btn">
+        <i class="fas fa-code"></i> שפת C
+    </a>
+    
+    <a href="physics1.html" class="btn">
+        <i class="fas fa-atom"></i> פיזיקה 1
+    </a>
+</body>
+</html>
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
