@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>הפורטל של רזיאל</title>
+    <title>הנדסת חשמל - רזיאל</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
     
@@ -14,7 +14,7 @@
             --primary: #2563eb;
             --card-bg: #ffffff;
             
-            /* צבעים לקורסים */
+            /* צבעים מותאמים להנדסת חשמל */
             --math: #3b82f6;   /* כחול */
             --code: #10b981;   /* ירוק */
             --phys: #f59e0b;   /* כתום */
@@ -30,9 +30,8 @@
             padding-bottom: 40px;
         }
 
-        /* --- כותרת ראשית --- */
         header {
-            background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #1e40af 100%);
             color: white;
             padding: 40px 20px 80px;
             text-align: center;
@@ -42,9 +41,8 @@
         }
 
         header h1 { margin: 0; font-size: 2rem; }
-        header p { opacity: 0.8; margin-top: 5px; }
+        header p { opacity: 0.9; margin-top: 5px; font-weight: 300; letter-spacing: 1px; }
 
-        /* --- טאבים לשנים --- */
         .tabs-container {
             display: flex;
             justify-content: center;
@@ -76,7 +74,6 @@
             box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
         }
 
-        /* --- תוכן הקורסים --- */
         .year-section {
             display: none;
             padding: 20px;
@@ -102,7 +99,6 @@
             gap: 20px;
         }
 
-        /* --- כרטיס קורס --- */
         .card {
             background: var(--card-bg);
             border-radius: 16px;
@@ -119,7 +115,6 @@
         .card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
         .card:active { transform: scale(0.98); }
 
-        /* פס צבעוני בצד */
         .card.math { border-right: 5px solid var(--math); }
         .card.code { border-right: 5px solid var(--code); }
         .card.phys { border-right: 5px solid var(--phys); }
@@ -149,10 +144,11 @@
             font-weight: 500;
             display: flex;
             align-items: center;
+            justify-content: flex-end;
             gap: 5px;
         }
 
-        /* --- Modal (החלון הקופץ) --- */
+        /* מודל */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -166,10 +162,7 @@
             transition: opacity 0.3s;
         }
 
-        .modal-overlay.open {
-            display: flex;
-            opacity: 1;
-        }
+        .modal-overlay.open { display: flex; opacity: 1; }
 
         .modal {
             background: white;
@@ -203,16 +196,9 @@
 
         .option-btn:active { transform: scale(0.98); }
 
-        /* כפתור לאתר הרגיל */
         .opt-site { background: #f8fafc; color: var(--text); }
         .opt-site .opt-icon { background: #e2e8f0; color: #475569; }
-        .opt-site:hover { background: #e2e8f0; }
-
-        /* כפתור ל-AI */
-        .opt-ai { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-color: #bbf7d0; color: #166534; }
-        .opt-ai .opt-icon { background: #22c55e; color: white; box-shadow: 0 4px 10px rgba(34, 197, 94, 0.3); }
         
-        /* כפתור ספציפי ל-NotebookLM בצבעים המקוריים שלו בערך */
         .opt-notebook { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-color: #bfdbfe; color: #1e40af; }
         .opt-notebook .opt-icon { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; }
 
@@ -242,8 +228,8 @@
 <body>
 
     <header>
-        <h1>הפורטל האקדמי</h1>
-        <p>רזיאל זערור | הנדסת תוכנה</p>
+        <h1>הנדסת חשמל</h1>
+        <p>רזיאל זערור</p>
     </header>
 
     <div class="tabs-container">
@@ -266,7 +252,7 @@
                         <p>גבולות, נגזרות ואינטגרלים</p>
                     </div>
                 </div>
-                <div class="tap-hint">לחץ לבחירת תוכן <i class="fas fa-chevron-left"></i></div>
+                <div class="tap-hint">לתרגול <i class="fas fa-chevron-left"></i></div>
             </div>
 
             <div class="card math" onclick="openModal('linear')">
@@ -277,7 +263,7 @@
                         <p>מטריצות ומערכות משוואות</p>
                     </div>
                 </div>
-                <div class="tap-hint">לחץ לבחירת תוכן <i class="fas fa-chevron-left"></i></div>
+                <div class="tap-hint">לתרגול <i class="fas fa-chevron-left"></i></div>
             </div>
 
             <div class="card code" onclick="openModal('c')">
@@ -288,7 +274,7 @@
                         <p>שפת C, לולאות ומצביעים</p>
                     </div>
                 </div>
-                <div class="tap-hint">לחץ לבחירת תוכן <i class="fas fa-chevron-left"></i></div>
+                <div class="tap-hint">לנוסחאות <i class="fas fa-chevron-left"></i></div>
             </div>
 
             <div class="card phys" onclick="openModal('physics')">
@@ -299,7 +285,7 @@
                         <p>מכניקה, אנרגיה ותנע</p>
                     </div>
                 </div>
-                <div class="tap-hint">לחץ לבחירת תוכן <i class="fas fa-chevron-left"></i></div>
+                <div class="tap-hint">לנוסחאות <i class="fas fa-chevron-left"></i></div>
             </div>
 
             <div class="card digital" onclick="openModal('digital')">
@@ -310,7 +296,7 @@
                         <p>שערים לוגיים ומעגלים</p>
                     </div>
                 </div>
-                <div class="tap-hint">לחץ לבחירת תוכן <i class="fas fa-chevron-left"></i></div>
+                <div class="tap-hint">ללמידה <i class="fas fa-chevron-left"></i></div>
             </div>
 
         </div>
@@ -329,63 +315,53 @@
     <div class="modal-overlay" id="courseModal" onclick="closeModal(event)">
         <div class="modal">
             <button class="close-btn" onclick="closeModal(event, true)">&times;</button>
-            
             <div class="modal-header">
                 <h2 class="modal-title" id="modalTitle">שם הקורס</h2>
-                <div class="modal-subtitle">בחר לאן תרצה להמשיך</div>
+                <div class="modal-subtitle">בחר מקור לימוד</div>
             </div>
-
-            <div class="modal-options">
-                <a href="#" id="siteLink" class="option-btn opt-site">
-                    <div class="opt-icon"><i class="far fa-file-alt"></i></div>
-                    <div class="opt-text">
-                        <h4>אתר תרגול ונוסחאות</h4>
-                        <p>מאגר שאלות, פתרונות ודפי נוסחאות.</p>
-                    </div>
-                </a>
-
-                <a href="#" id="aiLink" target="_blank" class="option-btn opt-notebook">
-                    <div class="opt-icon"><i class="fas fa-sparkles"></i></div>
-                    <div class="opt-text">
-                        <h4>המחברת החכמה (AI)</h4>
-                        <p>צ'אט על החומר, סיכום הרצאות ומבחנים.</p>
-                    </div>
-                </a>
-            </div>
+            <div class="modal-options" id="modalOptions"></div>
         </div>
     </div>
 
     <script>
-        // נתונים לכל הקורסים
         const coursesData = {
             'infi': {
-                title: 'אינפי 1 (חדו"א)',
-                site: 'infi.html',
-                ai: 'https://notebooklm.google.com/notebook/d8805bdc-8f74-4b6d-bdaf-f70833110acc'
+                title: 'אינפי 1',
+                siteUrl: 'Year_1/Semester_A/Infi_1/infi1_app.html',
+                siteDesc: 'מאגר שאלות ופתרונות',
+                aiUrl: 'https://notebooklm.google.com/notebook/d8805bdc-8f74-4b6d-bdaf-f70833110acc',
+                aiDesc: 'צ\'אט חכם וסיכום הרצאות'
             },
             'linear': {
                 title: 'אלגברה לינארית',
-                site: 'linear.html',
-                ai: 'https://notebooklm.google.com/notebook/7b4bac6c-febf-40b1-aee6-bdf642fed5e8'
+                siteUrl: 'Year_1/Semester_A/Linear_Algebra/linear_app.html',
+                siteDesc: 'שאלות ממבחנים',
+                aiUrl: 'https://notebooklm.google.com/notebook/7b4bac6c-febf-40b1-aee6-bdf642fed5e8',
+                aiDesc: 'צ\'אט חכם וסיכום הרצאות'
             },
             'c': {
                 title: 'מבוא למדעי המחשב',
-                site: 'c-lang.html',
-                ai: 'https://notebooklm.google.com/notebook/f2676ac2-3a69-466d-acd1-382e6f5e6364'
+                siteUrl: 'Year_1/Semester_A/Intro_CS/c_formulas.html',
+                siteDesc: 'דף נוסחאות וסינטקס',
+                aiUrl: 'https://notebooklm.google.com/notebook/f2676ac2-3a69-466d-acd1-382e6f5e6364',
+                aiDesc: 'עזרה בקוד והסברים'
             },
             'physics': {
-                title: 'פיזיקה 1 (מכניקה)',
-                site: 'physics1.html',
-                ai: 'https://notebooklm.google.com/notebook/4b474851-3937-4b48-a3fa-18cb71cebd2a'
+                title: 'פיזיקה 1',
+                siteUrl: 'Year_1/Semester_A/Physics_1/physics1_formulas.html', // עודכן לסמסטר א'
+                siteDesc: 'דף נוסחאות מסודר',
+                aiUrl: 'https://notebooklm.google.com/notebook/4b474851-3937-4b48-a3fa-18cb71cebd2a',
+                aiDesc: 'פתרון בעיות והסברים'
             },
             'digital': {
                 title: 'מערכות ספרתיות',
-                site: 'digital.html',
-                ai: 'https://notebooklm.google.com/notebook/cfbd64d0-3fe1-4b18-b709-03bdb8d9625d'
+                siteUrl: 'Year_1/Semester_A/Digital_Systems/digital_portal.html', // עודכן לסמסטר א'
+                siteDesc: 'פורטל הקורס',
+                aiUrl: 'https://notebooklm.google.com/notebook/cfbd64d0-3fe1-4b18-b709-03bdb8d9625d',
+                aiDesc: 'צ\'אט חכם על החומר'
             }
         };
 
-        // פונקציות טאבים
         function showYear(year) {
             document.querySelectorAll('.year-section').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -393,29 +369,22 @@
             event.target.classList.add('active');
         }
 
-        // פונקציות מודל
         const modal = document.getElementById('courseModal');
-        
-        function openModal(courseId) {
-            const data = coursesData[courseId];
-            if (!data) return;
+        const optionsContainer = document.getElementById('modalOptions');
 
-            // עדכון תוכן המודל
+        function openModal(id) {
+            const data = coursesData[id];
+            if(!data) return;
             document.getElementById('modalTitle').innerText = data.title;
-            document.getElementById('siteLink').href = data.site;
-            document.getElementById('aiLink').href = data.ai;
-
-            // פתיחה
+            optionsContainer.innerHTML = '';
+            if (data.siteUrl) {
+                optionsContainer.innerHTML += `<a href="${data.siteUrl}" class="option-btn opt-site"><div class="opt-text" style="flex:1"><h4>חומרי עזר ונוסחאות</h4><p>${data.siteDesc}</p></div><div class="opt-icon"><i class="far fa-file-alt"></i></div></a>`;
+            }
+            optionsContainer.innerHTML += `<a href="${data.aiUrl}" target="_blank" class="option-btn opt-notebook"><div class="opt-text" style="flex:1"><h4>המחברת החכמה (AI)</h4><p>${data.aiDesc}</p></div><div class="opt-icon"><i class="fas fa-sparkles"></i></div></a>`;
             modal.classList.add('open');
         }
 
-        function closeModal(e, force = false) {
-            // סגירה רק אם לחצו על הרקע הכהה או על ה-X
-            if (force || e.target === modal) {
-                modal.classList.remove('open');
-            }
-        }
+        function closeModal(e, force) { if (force || e.target === modal) modal.classList.remove('open'); }
     </script>
-
 </body>
 </html>
