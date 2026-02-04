@@ -52,8 +52,6 @@
             cursor: pointer;
             font-family: inherit;
             font-size: 13px;
-            text-decoration: none;
-            display: inline-block;
         }
 
         .btn:hover { opacity: 0.9; }
@@ -180,7 +178,7 @@
 
         /* --- הגדרות הדפסה (מותאמות ל-1.5 עמודים) --- */
         @media print {
-            .controls, .subtitle, .back-btn-container { display: none; }
+            .controls, .subtitle { display: none; }
             
             @page {
                 margin: 5mm;
@@ -240,9 +238,6 @@
 <body>
 
     <div class="controls">
-        <div class="back-btn-container" style="margin-bottom: 10px;">
-            <a href="index.html" class="btn" style="background-color: #555;">← חזרה לראשי</a>
-        </div>
         <button class="btn" onclick="toggleTheme('dark')">מצב כהה (Dark)</button>
         <button class="btn" style="background-color: #ddd; color: black;" onclick="toggleTheme('light')">מצב בהיר (Light/Print)</button>
     </div>
@@ -624,3 +619,4 @@ r1.info.salary = 5000.5; <span class="cm">// כתיבה ל-Union</span>
     </div>
 </body>
 </html>
+
