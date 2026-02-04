@@ -3,52 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>פורטל לימודים - רזיאל זערור</title>
+    <title>הפורטל של רזיאל</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; background: #f4f6f7; text-align: center; padding: 20px; }
-        .btn { 
-            display: block; margin: 15px auto; padding: 15px; width: 80%; max-width: 300px;
-            background: #2c3e50; color: white; text-decoration: none; border-radius: 10px; font-weight: bold;
+        /* איפוס הגדרות בסיסי */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
-        .btn:hover { background: #3498db; }
-        h1 { color: #2c3e50; }
-    </style>
-</head>
-<body>
-    <h1>הפורטל של רזיאל</h1>
-    <p>בחר את הנושא שברצונך לתרגל:</p>
-    
-    <a href="linear.html" class="btn">
-        <i class="fas fa-calculator"></i> אלגברה לינארית
-    </a>
-
-    <a href="c-lang.html" class="btn">
-        <i class="fas fa-code"></i> שפת C
-    </a>
-    
-    <a href="physics1.html" class="btn">
-        <i class="fas fa-atom"></i> פיזיקה 1
-    </a>
-</body>
-</html>
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
             padding: 20px;
-            text-align: center;
         }
 
+        /* עיצוב הכותרת */
         header {
+            text-align: center;
             margin-bottom: 40px;
+            margin-top: 20px;
         }
 
         h1 {
-            color: var(--primary);
-            margin-bottom: 10px;
+            color: #2c3e50;
+            font-size: 2rem;
+            margin-bottom: 5px;
         }
 
         p.subtitle {
@@ -56,180 +42,133 @@
             font-size: 1.1rem;
         }
 
-        /* Years Container */
-        .years-grid {
+        /* רשת הכרטיסיות */
+        .grid-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 15px;
-            max-width: 800px;
-            margin: 0 auto 30px auto;
-        }
-
-        .year-btn {
-            background: var(--card-bg);
-            border: 2px solid var(--primary);
-            color: var(--primary);
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-
-        .year-btn.active, .year-btn:hover {
-            background: var(--primary);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        }
-
-        /* Courses Container */
-        .courses-container {
-            max-width: 800px;
-            margin: 0 auto;
-            display: none; /* Hidden by default */
-        }
-
-        .courses-container.visible {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            grid-template-columns: 1fr; /* בנייד - עמודה אחת */
             gap: 20px;
-            animation: fadeIn 0.5s ease;
+            width: 100%;
+            max-width: 500px; /* רוחב מקסימלי יפה */
         }
 
-        .course-card {
-            background: var(--card-bg);
-            border-radius: 12px;
+        /* עיצוב הכרטיס */
+        .card {
+            background: white;
+            border-radius: 16px;
             padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            text-align: right;
-            border-top: 4px solid var(--accent);
-        }
-
-        .course-card h3 {
-            margin-top: 0;
-            color: var(--primary);
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-        }
-
-        .links-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .links-list li {
-            margin-bottom: 10px;
-        }
-
-        .links-list a {
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             text-decoration: none;
+            color: #333;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .card:active {
+            transform: scale(0.98); /* אפקט לחיצה */
+        }
+
+        .card-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .icon-box {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
             color: white;
-            background-color: var(--accent);
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 0.95rem;
-            transition: background 0.2s;
-            text-align: center;
         }
 
-        .links-list a:hover {
-            background-color: #2980b9;
+        .card-text h2 {
+            font-size: 1.2rem;
+            margin-bottom: 2px;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        footer {
-            margin-top: 50px;
+        .card-text span {
             font-size: 0.9rem;
-            color: #95a5a6;
+            color: #888;
         }
+
+        .arrow {
+            color: #ccc;
+            font-size: 1.2rem;
+        }
+
+        /* צבעים ייחודיים לכל נושא */
+        .linear-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .c-bg { background: linear-gradient(135deg, #2af598 0%, #009efd 100%); }
+        .phys-bg { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%); }
+        
+        footer {
+            margin-top: auto;
+            padding-top: 40px;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+
     </style>
 </head>
 <body>
 
     <header>
         <h1>הפורטל של רזיאל</h1>
-        <p class="subtitle">חומרי לימוד, סיכומים ונוסחאות</p>
+        <p class="subtitle">כל החומר הלימודי במקום אחד</p>
     </header>
 
-    <div class="years-grid">
-        <button class="year-btn active" onclick="showYear('A')">שנה א'</button>
-        <button class="year-btn" onclick="showYear('B')">שנה ב'</button>
-        <button class="year-btn" onclick="showYear('C')">שנה ג'</button>
-        <button class="year-btn" onclick="showYear('D')">שנה ד'</button>
-    </div>
-
-    <div id="year-A" class="courses-container visible">
+    <div class="grid-container">
         
-        <div class="course-card">
-            <h3>פיזיקה 1</h3>
-            <ul class="links-list">
-                <li><a href="physics1.html">📄 דף נוסחאות (רזיאל)</a></li>
-                </ul>
-        </div>
+        <a href="linear.html" class="card">
+            <div class="card-content">
+                <div class="icon-box linear-bg">
+                    <i class="fas fa-calculator"></i>
+                </div>
+                <div class="card-text">
+                    <h2>אלגברה לינארית</h2>
+                    <span>תרגול שאלות ופתרונות</span>
+                </div>
+            </div>
+            <i class="fas fa-chevron-left arrow"></i>
+        </a>
 
-        <div class="course-card">
-            <h3>מבוא למדעי המחשב (C)</h3>
-            <ul class="links-list">
-                <li><a href="c-prog.html">💻 דף נוסחאות - Cheat Sheet</a></li>
-            </ul>
-        </div>
+        <a href="c-lang.html" class="card">
+            <div class="card-content">
+                <div class="icon-box c-bg">
+                    <i class="fas fa-code"></i>
+                </div>
+                <div class="card-text">
+                    <h2>שפת C</h2>
+                    <span>נוסחאות וסינטקס</span>
+                </div>
+            </div>
+            <i class="fas fa-chevron-left arrow"></i>
+        </a>
 
-        <div class="course-card">
-            <h3>אלגברה לינארית</h3>
-            <ul class="links-list">
-                <li><a href="linear-algebra.html">🧮 מאגר שאלות ופתרונות</a></li>
-            </ul>
-        </div>
+        <a href="physics1.html" class="card">
+            <div class="card-content">
+                <div class="icon-box phys-bg">
+                    <i class="fas fa-atom"></i>
+                </div>
+                <div class="card-text">
+                    <h2>פיזיקה 1</h2>
+                    <span>דף נוסחאות וסיכומים</span>
+                </div>
+            </div>
+            <i class="fas fa-chevron-left arrow"></i>
+        </a>
 
-    </div>
-
-    <div id="year-B" class="courses-container">
-        <div class="course-card">
-            <h3>מבני נתונים</h3>
-            <p>בקרוב...</p>
-        </div>
-    </div>
-
-    <div id="year-C" class="courses-container">
-        <p>עדיין אין חומרים לשנה זו</p>
-    </div>
-    
-    <div id="year-D" class="courses-container">
-        <p>עדיין אין חומרים לשנה זו</p>
     </div>
 
     <footer>
-        נבנה ע"י רזיאל זערור | 2026
+        © 2026 נבנה ע"י רזיאל זערור
     </footer>
-
-    <script>
-        function showYear(year) {
-            // הסתרת כל השנים
-            document.querySelectorAll('.courses-container').forEach(div => {
-                div.classList.remove('visible');
-            });
-            
-            // הסרת סימון מהכפתורים
-            document.querySelectorAll('.year-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-
-            // הצגת השנה שנבחרה
-            document.getElementById('year-' + year).classList.add('visible');
-            
-            // סימון הכפתור שנלחץ (שיטה פשוטה למצוא אותו לפי הטקסט או ה-onclick, כאן פשוט נסמן את הנוכחי)
-            event.target.classList.add('active');
-        }
-    </script>
 
 </body>
 </html>
