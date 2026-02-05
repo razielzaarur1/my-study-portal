@@ -368,8 +368,15 @@
 </div>
 
 <script>
-    // הגדרה בטיחותית למקרה שאין עדיין קובץ פתרונות
-    const solutionsData = (typeof solutionsData !== 'undefined') ? solutionsData : {};
+    // הגדרה בטוחה של משתנה הפתרונות למניעת קריסה
+    let activeSolutions = {};
+    try {
+        if (typeof solutionsData !== 'undefined') {
+            activeSolutions = solutionsData;
+        }
+    } catch (e) {
+        console.log("No solutions file loaded");
+    }
 
     // State
     let state = { 
@@ -381,7 +388,7 @@
     window.addEventListener('load', () => {
         if (typeof questionsData !== 'undefined') {
             generateExamList();
-            generateTopicFilters(); // DYNAMIC TOPICS
+            generateTopicFilters(); 
             checkDeepLink();
         } else {
             document.getElementById('gridArea').innerHTML = '<div style="text-align:center; padding:20px;">שגיאה בטעינת הקובץ infi1_questions.js</div>';
@@ -392,15 +399,13 @@
     function generateTopicFilters() {
         const allTopics = new Set();
         questionsData.forEach(q => {
-            q.topic.forEach(t => allTopics.add(t));
+            if(q.topic) q.topic.forEach(t => allTopics.add(t));
         });
         const sortedTopics = Array.from(allTopics).sort();
 
         const container = document.getElementById('topics-group');
-        // Keep header, clear buttons
         container.innerHTML = '<div class="filter-header">נושא הלימוד</div>';
 
-        // All Button
         const allBtn = document.createElement('button');
         allBtn.className = 'filter-btn active';
         allBtn.id = 'btn-all-topics';
@@ -408,11 +413,10 @@
         allBtn.onclick = () => toggleTopic('all');
         container.appendChild(allBtn);
 
-        // Topic Buttons
         sortedTopics.forEach(t => {
             const btn = document.createElement('button');
             btn.className = 'filter-btn';
-            const safeId = `btn-topic-${t.replace(/\s+/g, '-')}`; // Safe ID
+            const safeId = `btn-topic-${t.replace(/\s+/g, '-')}`; 
             btn.id = safeId;
             btn.innerText = t;
             btn.onclick = () => toggleTopic(t);
@@ -481,11 +485,9 @@
             const diff = state.selectedDifficulty.length === 0 || state.selectedDifficulty.includes(q.difficulty);
             const srch = q.text.includes(state.search) || q.source.includes(state.search);
             
-            // Logic for topics: if ANY selected topic is in question's topics -> show
             let topicMatch = true;
             if (state.selectedTopics.length > 0) {
-                // If question has ANY of the selected topics, it's a match
-                topicMatch = q.topic.some(t => state.selectedTopics.includes(t));
+                topicMatch = q.topic && q.topic.some(t => state.selectedTopics.includes(t));
             }
             return diff && srch && topicMatch;
         });
@@ -534,7 +536,7 @@
         document.getElementById('fc-difficulty').className = "";
 
         // FRONT
-        let tags = q.topic.map(t => `<span class="tag topic">${t}</span>`).join('');
+        let tags = (q.topic||[]).map(t => `<span class="tag topic">${t}</span>`).join('');
         let diff = `<span class="tag ${q.difficulty}">${translateDifficulty(q.difficulty)}</span>`;
         let options = state.mcMode ? generateOptionsHTML(q) : '';
         
@@ -557,7 +559,7 @@
         `;
 
         // BACK
-        const sol = solutionsData[q.id] || "טרם הוזן פתרון לשאלה זו.";
+        const sol = activeSolutions[q.id] || "טרם הוזן פתרון לשאלה זו.";
         back.innerHTML = `
             <div class="disclaimer-alert" style="margin-bottom:15px; border-radius:6px; font-size:0.8rem;">
                 <i class="fas fa-exclamation-triangle"></i> תשובה זו מבוססת AI ועשויה להכיל טעויות.
@@ -570,7 +572,7 @@
     }
 
     function generateCardContent(q) {
-        let tags = q.topic.map(t => `<span class="tag topic">${t}</span>`).join('');
+        let tags = (q.topic||[]).map(t => `<span class="tag topic">${t}</span>`).join('');
         let diff = `<span class="tag ${q.difficulty}">${translateDifficulty(q.difficulty)}</span>`;
         let options = state.mcMode ? generateOptionsHTML(q) : '';
         
@@ -691,7 +693,7 @@
     function toggleSidebar() { document.getElementById('mainSidebar').classList.toggle('open'); document.querySelector('.sidebar-overlay').classList.toggle('open'); }
     function toggleSettingsModal() { const m=document.getElementById('settingsModal'); m.style.display=m.style.display==='flex'?'none':'flex'; }
     function toggleMCMode() { state.mcMode = !state.mcMode; runFilter(); }
-    function showListSolution(id) { document.getElementById('modalBody').innerHTML=solutionsData[id]||"אין פתרון זמין לשאלה זו."; document.getElementById('solutionModal').style.display='flex'; refreshMath(); }
+    function showListSolution(id) { document.getElementById('modalBody').innerHTML=activeSolutions[id]||"אין פתרון זמין לשאלה זו."; document.getElementById('solutionModal').style.display='flex'; refreshMath(); }
     function closeSolutionModal() { document.getElementById('solutionModal').style.display='none'; }
     function handleSearch() { state.search=document.getElementById('searchInput').value; runFilter(); }
     
