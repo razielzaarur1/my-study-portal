@@ -262,7 +262,7 @@
                     <tr><td>שלם (int)</td><td dir="ltr">%d</td><td dir="ltr">&</td><td></td></tr>
                     <tr><td>תו (char)</td><td dir="ltr">%c</td><td dir="ltr">&</td><td></td></tr>
                     <tr><td>עשרוני (float)</td><td dir="ltr">%f</td><td dir="ltr">&</td><td>הדפסה: <code>%.2f</code></td></tr>
-                    <tr><td>כפול (double)</td><td dir="ltr">%lf</td><td dir="ltr">&</td><td>הדפסה: <code>%.2lf</code></td></tr>
+                    <tr><td>עשרוני בגודל כפול (double)</td><td dir="ltr">%lf</td><td dir="ltr">&</td><td>הדפסה: <code>%.2lf</code></td></tr>
                     <tr><td>מחרוזת</td><td dir="ltr">%s</td><td>ללא</td><td>חובה לציין גודל!</td></tr>
                     <tr><td>כתובת</td><td dir="ltr">%p</td><td>-</td><td></td></tr>
                 </tbody>
@@ -309,9 +309,9 @@
             <p><strong>Casting & Arithmetic:</strong></p>
 <pre>
 <span class="tp">int</span> a = 5, b = 2;
-<span class="tp">float</span> r1 = a / b;         <span class="cm">// = 2.0 (טעות!)</span>
+<span class="tp">float</span> r1 = a / b;          <span class="cm">// = 2.0 (טעות!)</span>
 <span class="tp">float</span> r2 = (<span class="tp">float</span>)a / b;  <span class="cm">// = 2.5 (תקין)</span>
-<span class="tp">int</span> mod = 10 % 3;         <span class="cm">// = 1 (שארית)</span>
+<span class="tp">int</span> mod = 10 % 3;          <span class="cm">// = 1 (שארית)</span>
 </pre>
         </div>
 
@@ -320,7 +320,7 @@
             <p><strong>אופרטורים לוגיים:</strong></p>
             <table>
                 <tbody>
-                    <tr><td dir="ltr">&&</td><td>וגם (AND)</td><td dir="ltr">||</td><td>או (OR)</td><td dir="ltr">!</td><td>שלילה</td></tr>
+                    <tr><td dir="ltr">&&</td><td>וגם (AND)</td><td dir="ltr">||</td><td>או (OR)</td><td dir="ltr">!=</td><td>שלילה</td></tr>
                 </tbody>
             </table>
 
@@ -442,16 +442,20 @@ func_ptr = add;
 <span class="cm">// 2. אתחול לאפסים</span>
 <span class="tp">int</span> *arr2 = (<span class="tp">int</span>*)<span class="fn">calloc</span>(size, <span class="kw">sizeof</span>(<span class="tp">int</span>));
 
-<span class="cm">// 3. שחרור</span>
+<span class="cm">// 3. שינוי גודל (realloc)</span>
+<span class="tp">int</span> *tmp = (<span class="tp">int</span>*)<span class="fn">realloc</span>(arr, new_size);
+<span class="kw">if</span> (tmp != NULL) arr = tmp;
+
+<span class="cm">// 4. שחרור</span>
 <span class="fn">free</span>(arr);
 </pre>
             <p><strong>מערך דו-ממדי דינמי:</strong></p>
 <pre>
 <span class="cm">// א. הקצאת שורות</span>
-<span class="tp">int</span> **mat = (<span class="tp">int</span>**)<span class="fn">malloc</span>(rows * <span class="kw">sizeof</span>(<span class="tp">int</span>*));
+<span class="tp">int</span> **mat = (<span class="tp">int**</span>)<span class="fn">malloc</span>(rows * <span class="kw">sizeof</span>(<span class="tp">int*</span>));
 <span class="kw">for</span>(<span class="tp">int</span> i=0; i&lt;rows; i++) {
     <span class="cm">// ב. הקצאת עמודות</span>
-    mat[i] = (<span class="tp">int</span>*)<span class="fn">malloc</span>(cols * <span class="kw">sizeof</span>(<span class="tp">int</span>));
+    mat[i] = (<span class="tp">int*</span>)<span class="fn">malloc</span>(cols * <span class="kw">sizeof</span>(<span class="tp">int</span>));
 }
 <span class="cm">// ג. שחרור (בסדר הפוך!)</span>
 <span class="kw">for</span>(<span class="tp">int</span> i=0; i&lt;rows; i++) <span class="fn">free</span>(mat[i]);
@@ -460,7 +464,20 @@ func_ptr = add;
         </div>
 
         <div class="card">
-            <h2>7. מבנים ואיגודים (Struct & Union)</h2>
+            <h2>7. מערך דו-ממדי כשטוח (Flattened 2D Array)</h2>
+            <p>גישה למטריצה שהוקצתה ב-malloc אחד גדול:</p>
+            <p>עבור מטריצה עם rows שורות ו-cols עמודות, הגישה לתא בשורה $i$ ועמודה $j$ תתבצע כך: <br> 
+            <code>arr[i * cols + j]</code></p>
+            <p>דוגמת קוד קצרה:</p>
+<pre>
+<span class="tp">int</span> *arr = (<span class="tp">int</span> *)<span class="fn">malloc</span>(rows * cols * <span class="kw">sizeof</span>(<span class="tp">int</span>));
+<span class="cm">// Accessing element at (i, j):</span>
+arr[i * cols + j] = 5;
+</pre>
+        </div>
+
+        <div class="card">
+            <h2>8. מבנים ואיגודים (Struct & Union)</h2>
 <pre>
 <span class="kw">typedef struct</span> { 
     <span class="tp">char</span> name[50]; 
@@ -493,7 +510,7 @@ r1.info.salary = 5000.5; <span class="cm">// כתיבה ל-Union</span>
         </div>
 
         <div class="card">
-            <h2>8. קבצים (Files)</h2>
+            <h2>9. קבצים (Files)</h2>
             <div class="note">EOF = END OF FILE (סימון סוף הקובץ).</div>
             <p><strong>מצבי פתיחה:</strong></p>
             <table>
@@ -531,7 +548,7 @@ r1.info.salary = 5000.5; <span class="cm">// כתיבה ל-Union</span>
         </div>
 
         <div class="card">
-            <h2>9. אלגוריתמים שימושיים</h2>
+            <h2>10. אלגוריתמים שימושיים</h2>
             <p><strong>מיון בועות (Bubble Sort):</strong></p>
 <pre>
 <span class="tp">void</span> <span class="fn">bubbleSort</span>(<span class="tp">int</span> arr[], <span class="tp">int</span> n) {
@@ -553,7 +570,7 @@ r1.info.salary = 5000.5; <span class="cm">// כתיבה ל-Union</span>
         <span class="tp">int</span> m = l + (r - l) / 2;
         <span class="kw">if</span> (arr[m] == x) <span class="kw">return</span> m;
         <span class="kw">if</span> (arr[m] < x) l = m + 1;
-        <span class="kw">else</span> r = m - 1;
+        <span class="kw">else r = m - 1;
     }
     <span class="kw">return</span> -1;
 }
@@ -561,7 +578,7 @@ r1.info.salary = 5000.5; <span class="cm">// כתיבה ל-Union</span>
         </div>
 
         <div class="card span-all" style="column-span: all; width: 100%; margin-bottom: 0;">
-            <h2>10. ספריות נפוצות (Libraries)</h2>
+            <h2>11. ספריות נפוצות (Libraries)</h2>
             
             <div class="sub-header"><span dir="ltr">&lt;stdio.h&gt;</span> (Standard I/O)</div>
             <table>
@@ -619,4 +636,3 @@ r1.info.salary = 5000.5; <span class="cm">// כתיבה ל-Union</span>
     </div>
 </body>
 </html>
-
