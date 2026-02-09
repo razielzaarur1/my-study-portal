@@ -176,12 +176,12 @@
         .fn { color: #dcdcaa; }
         body.light-theme .fn { color: #795e26; } 
 
-        /* --- הגדרות הדפסה (מותאמות ל-1.5 עמודים) --- */
+        /* --- הגדרות הדפסה (דחוסות במיוחד) --- */
         @media print {
-            .controls, .subtitle { display: none; }
+            .controls { display: none; }
             
             @page {
-                margin: 5mm;
+                margin: 5mm; /* שוליים צרים לדף */
                 size: A4 portrait;
             }
 
@@ -189,40 +189,68 @@
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
                 padding: 0;
-                /* זום אגרסיבי יותר כדי להכניס הכל */
-                zoom: 0.70; 
-                font-size: 11pt;
+                /* זום קטן יותר כדי לדחוס תוכן */
+                zoom: 0.60; 
+                font-size: 10pt;
+                color: #000;
             }
 
+            header {
+                margin-bottom: 5px;
+                padding-bottom: 2px;
+                border-bottom: 1px solid var(--accent-color) !important;
+            }
+
+            h1 { font-size: 1.4rem; margin-bottom: 2px; }
+            .subtitle { font-size: 0.8rem; margin: 0; }
+
+            /* פריסה ל-3 עמודות בהדפסה במקום 2 */
             .grid-container {
-                column-count: 2;
+                column-count: 3;
+                column-gap: 6px;
                 display: block;
-                column-gap: 8px;
             }
 
             .card {
                 box-shadow: none;
                 break-inside: avoid;
-                margin-bottom: 6px; /* רווחים קטנים יותר */
-                padding: 6px;
-                border: 1px solid #555 !important;
+                margin-bottom: 5px;
+                padding: 4px; /* פחות ריפוד פנימי */
+                border: 1px solid #777 !important;
+                background-color: #fff !important;
             }
 
-            /* ביטול פריסה לרוחב מלא בהדפסה כדי לחסוך מקום */
+            /* ביטול פריסה לרוחב מלא */
             .span-all {
                 column-span: none !important;
                 width: 100% !important;
             }
 
-            h2 { font-size: 1.1rem; margin-bottom: 4px; padding-bottom: 2px; }
-            pre { margin: 2px 0; padding: 4px; }
-            table { margin: 3px 0; }
-            .note { margin: 4px 0; padding: 3px; }
-            
-            header {
-                margin-bottom: 5px;
-                border-bottom: 2px solid var(--accent-color) !important;
+            /* הקטנת רווחים ופונטים בתוך הכרטיסיות */
+            h2 { 
+                font-size: 1rem; 
+                margin-bottom: 3px; 
+                padding-bottom: 1px; 
             }
+            
+            .sub-header {
+                font-size: 0.9rem;
+                margin-top: 6px;
+                margin-bottom: 2px;
+            }
+
+            pre { 
+                margin: 2px 0; 
+                padding: 2px; 
+                font-size: 8.5pt; /* קוד קטן יותר */
+                border: 1px solid #ccc;
+            }
+
+            table { margin: 2px 0; font-size: 9pt; }
+            th, td { padding: 1px 3px; }
+            
+            p { margin: 2px 0; }
+            .note { margin: 3px 0; padding: 2px; }
         }
     </style>
     <script>
