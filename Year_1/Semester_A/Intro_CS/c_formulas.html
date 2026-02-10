@@ -278,6 +278,25 @@
     <div class="grid-container">
 
         <div class="card">
+            <h2>0. הקדמה (Preprocessor)</h2>
+            <div class="sub-header">ייבוא ספריות וקבועים</div>
+            <p>פקודות המתחילות ב-<code>#</code> מטופלות <em>לפני</em> הקומפילציה.</p>
+<pre>
+<span class="kw">#include</span> &lt;stdio.h&gt; <span class="cm">// ייבוא ספריית הקלט/פלט הסטנדרטית</span>
+<span class="kw">#include</span> &lt;stdlib.h&gt; <span class="cm">// הקצאות זיכרון, רנדום וכו'</span>
+
+<span class="cm">// #define: החלפה טקסטואלית ("העתק-הדבק") לפני הריצה</span>
+<span class="kw">#define</span> SIZE 10     <span class="cm">// בכל מקום שכתוב SIZE, המחשב יראה 10</span>
+<span class="kw">#define</span> PI 3.14
+
+<span class="tp">int</span> main() {
+    <span class="tp">int</span> arr[SIZE];  <span class="cm">// הקומפיילר רואה: int arr[10];</span>
+    <span class="kw">return</span> 0;
+}
+</pre>
+        </div>
+
+        <div class="card">
             <h2>1. יסודות, פלט (printf) וקלט</h2>
             <div class="note">⚠ <strong>דגש קריטי:</strong> שימוש ב-<code>scanf_s</code>.</div>
             
@@ -431,7 +450,21 @@ func_ptr = add;
 
         <div class="card">
             <h2>5. מערכים ומחרוזות (Safe)</h2>
-            <p><strong>דוגמה למערך דו-ממדי:</strong></p>
+            
+            <div class="sub-header">קליטת מחרוזת בטוחה (fgets)</div>
+            <div class="note"><code>gets</code> מסוכן לשימוש! השתמש ב-<code>fgets</code> לקליטת שורה כולל רווחים.</div>
+<pre>
+<span class="tp">char</span> str[100];
+<span class="fn">printf</span>(<span class="str">"Enter sentence: "</span>);
+
+<span class="cm">// (לאן לקלוט, גודל מקסימלי, מאיפה - stdin)</span>
+<span class="fn">fgets</span>(str, <span class="kw">sizeof</span>(str), stdin);
+
+<span class="cm">// fgets קולטת גם את האנטר (\n). כך מסירים אותו:</span>
+str[<span class="fn">strcspn</span>(str, <span class="str">"\n"</span>)] = 0;
+</pre>
+
+            <div class="sub-header">מערך דו-ממדי</div>
 <pre>
 <span class="tp">int</span> mat[2][3] = {{1, 2, 3}, {4, 5, 6}};
 </pre>
@@ -447,15 +480,20 @@ func_ptr = add;
     }
 }
 </pre>
-            <p><strong>מחרוזות (Safe - חובה גודל יעד):</strong></p>
+            
+            <div class="sub-header">פונקציות מחרוזת (Safe)</div>
             <div class="note">העתקה בטוחה: פונקציות <code>_s</code> דורשות גודל יעד.</div>
 <pre>
 <span class="tp">char</span> src[]=<span class="str">"Hello"</span>; <span class="tp">char</span> dst[20];
-<span class="fn">strlen</span>(src);       <span class="cm">// אורך נטו</span>
+<span class="fn">strlen</span>(src);       <span class="cm">// אורך נטו (ללא \0)</span>
+
 <span class="cm">// העתקה בטוחה: (יעד, גודל יעד, מקור)</span>
 <span class="fn">strcpy_s</span>(dst, <span class="kw">sizeof</span>(dst), src); 
+
 <span class="fn">strcmp</span>(s1, s2);    <span class="cm">// 0 אם שווים!</span>
-<span class="fn">strcat_s</span>(dst, <span class="kw">sizeof</span>(dst), <span class="str">"!"</span>); <span class="cm">// שרשור</span>
+
+<span class="cm">// שרשור בטוח:</span>
+<span class="fn">strcat_s</span>(dst, <span class="kw">sizeof</span>(dst), <span class="str">" World"</span>);
 </pre>
         </div>
 
@@ -556,6 +594,7 @@ r1.info.salary = 5000.5; <span class="cm">// כתיבה ל-Union</span>
                 <tbody>
                     <tr><td dir="ltr">fopen_s</td><td>(&fp, name, mode)</td></tr>
                     <tr><td dir="ltr">fscanf_s</td><td>קריאה מקובץ (כמו scanf_s)</td></tr>
+                    <tr><td dir="ltr">fgets</td><td>קריאת שורה (כולל רווחים)</td></tr>
                     <tr><td dir="ltr">fprintf</td><td>כתיבה לקובץ (כמו printf)</td></tr>
                     <tr><td dir="ltr">fclose</td><td>סגירת קובץ (חובה!)</td></tr>
                 </tbody>
@@ -565,11 +604,20 @@ r1.info.salary = 5000.5; <span class="cm">// כתיבה ל-Union</span>
 <span class="tp">FILE</span> *fp;<span class="cm">// פתיחה בטוחה</span>
 <span class="fn">fopen_s</span>(&fp, <span class="str">"file.txt"</span>, <span class="str">"r"</span>);
 <span class="kw">if</span> (fp == NULL) <span class="fn">printf</span>(<span class="str">"Error"</span>);
-<span class="cm">// קריאה (כמו scanf_s)</span>
+
+<span class="cm">// אפשרות א': קריאה מפורמטת (כמו scanf)</span>
 <span class="tp">int</span> num;
 <span class="kw">while</span> (<span class="fn">fscanf_s</span>(fp, <span class="str">" %d"</span>, &num) != EOF) {
     <span class="fn">printf</span>(<span class="str">"%d\n"</span>, num);
 }
+
+<span class="cm">// אפשרות ב': קריאת שורות (fgets)</span>
+<span class="tp">char</span> line[100];
+<span class="cm">// קריאה עד סוף הקובץ (NULL)</span>
+<span class="kw">while</span> (<span class="fn">fgets</span>(line, <span class="kw">sizeof</span>(line), fp) != NULL) {
+    <span class="fn">printf</span>(<span class="str">"%s"</span>, line);
+}
+
 <span class="fn">fprintf</span>(fp, <span class="str">"Result: %d"</span>, num); <span class="cm">// כתיבה</span>
 <span class="fn">fclose</span>(fp); <span class="cm">// חובה!</span>
 </pre>
