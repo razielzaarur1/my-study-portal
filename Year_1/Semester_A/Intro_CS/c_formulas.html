@@ -176,12 +176,12 @@
         .fn { color: #dcdcaa; }
         body.light-theme .fn { color: #795e26; } 
 
-        /* --- הגדרות הדפסה (דחוסות במיוחד) --- */
+        /* --- הגדרות הדפסה (תיקון חיתוך טקסט) --- */
         @media print {
             .controls { display: none; }
             
             @page {
-                margin: 5mm; /* שוליים צרים לדף */
+                margin: 5mm; 
                 size: A4 portrait;
             }
 
@@ -189,9 +189,10 @@
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
                 padding: 0;
-                /* זום קטן יותר כדי לדחוס תוכן */
+                
+                /* החזרתי ל-0.75 כדי שיהיה גדול וקריא */
                 zoom: 0.75; 
-                font-size: 11pt;
+                font-size: 11pt; 
                 color: #000;
             }
 
@@ -204,53 +205,45 @@
             h1 { font-size: 1.4rem; margin-bottom: 2px; }
             .subtitle { font-size: 0.8rem; margin: 0; }
 
-            /* פריסה ל-3 עמודות בהדפסה במקום 2 */
+            /* שינוי קריטי: 2 עמודות במקום 3 */
+            /* זה נותן יותר רוחב לכל כרטיסייה ומונע חיתוך */
             .grid-container {
-                column-count: 3;
-                column-gap: 6px;
+                column-count: 2; 
+                column-gap: 10px;
                 display: block;
             }
 
             .card {
                 box-shadow: none;
                 break-inside: avoid;
+                page-break-inside: avoid; /* תוספת למניעת חיתוך באמצע */
                 margin-bottom: 5px;
-                padding: 4px; /* פחות ריפוד פנימי */
+                padding: 5px;
                 border: 1px solid #777 !important;
                 background-color: #fff !important;
+                overflow: visible !important; /* מוודא ששום דבר לא מוסתר */
             }
 
-            /* ביטול פריסה לרוחב מלא */
-            .span-all {
-                column-span: none !important;
-                width: 100% !important;
-            }
-
-            /* הקטנת רווחים ופונטים בתוך הכרטיסיות */
-            h2 { 
-                font-size: 1rem; 
-                margin-bottom: 3px; 
-                padding-bottom: 1px; 
-            }
-            
-            .sub-header {
-                font-size: 0.9rem;
-                margin-top: 6px;
-                margin-bottom: 2px;
-            }
-
+            /* תיקון קריטי: שבירת שורות ארוכות בקוד */
             pre { 
+                white-space: pre-wrap; /* שובר שורות ארוכות */
+                word-wrap: break-word;
                 margin: 2px 0; 
                 padding: 2px; 
-                font-size: 8.5pt; /* קוד קטן יותר */
+                font-size: 9pt; 
                 border: 1px solid #ccc;
             }
 
-            table { margin: 2px 0; font-size: 9pt; }
+            table { margin: 2px 0; font-size: 10pt; }
             th, td { padding: 1px 3px; }
             
             p { margin: 2px 0; }
             .note { margin: 3px 0; padding: 2px; }
+            
+            .span-all {
+                column-span: all !important;
+                width: 100% !important;
+            }
         }
     </style>
     <script>
