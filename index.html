@@ -244,6 +244,17 @@
         <div class="semester-label">סמסטר א'</div>
         <div class="grid">
             
+            <div class="card code" onclick="openModal('grades')">
+                <div class="card-header">
+                    <div class="icon-box"><i class="fas fa-calculator"></i></div>
+                    <div>
+                        <h3>מחשבון ציונים</h3>
+                        <p>חישוב ממוצע וניתוח נתונים</p>
+                    </div>
+                </div>
+                <div class="tap-hint">לכניסה <i class="fas fa-chevron-left"></i></div>
+            </div>
+            
             <div class="card math" onclick="openModal('infi')">
                 <div class="card-header">
                     <div class="icon-box"><i class="fas fa-infinity"></i></div>
@@ -325,6 +336,13 @@
 
     <script>
         const coursesData = {
+            'grades': {
+                title: 'מחשבון ציונים מתקדם',
+                siteUrl: 'grades_calc.html',  // הקישור לקובץ שיצרת
+                siteDesc: 'מעבר למערכת חישוב ציונים וגרפים',
+                aiUrl: '#', 
+                aiDesc: 'אין צורך ב-AI כאן'
+            }
             'infi': {
                 title: 'אינפי 1',
                 siteUrl: 'Year_1/Semester_A/Infi_1/infi1_app.html',
