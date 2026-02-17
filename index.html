@@ -338,11 +338,11 @@
         const coursesData = {
             'grades': {
                 title: 'מחשבון ציונים מתקדם',
-                siteUrl: 'grades_calc.html',  // הקישור לקובץ שיצרת
+                siteUrl: 'grades_calc.html',
                 siteDesc: 'מעבר למערכת חישוב ציונים וגרפים',
                 aiUrl: '#', 
                 aiDesc: 'אין צורך ב-AI כאן'
-            }
+            },
             'infi': {
                 title: 'אינפי 1',
                 siteUrl: 'Year_1/Semester_A/Infi_1/infi1_app.html',
@@ -366,14 +366,14 @@
             },
             'physics': {
                 title: 'פיזיקה 1',
-                siteUrl: 'Year_1/Semester_A/Physics_1/physics1_formulas.html', // עודכן לסמסטר א'
+                siteUrl: 'Year_1/Semester_A/Physics_1/physics1_formulas.html',
                 siteDesc: 'דף נוסחאות מסודר',
                 aiUrl: 'https://notebooklm.google.com/notebook/4b474851-3937-4b48-a3fa-18cb71cebd2a',
                 aiDesc: 'פתרון בעיות והסברים'
             },
             'digital': {
                 title: 'מערכות ספרתיות',
-                siteUrl: 'Year_1/Semester_A/Digital_Systems/digital_portal.html', // עודכן לסמסטר א'
+                siteUrl: 'Year_1/Semester_A/Digital_Systems/digital_portal.html',
                 siteDesc: 'פורטל הקורס',
                 aiUrl: 'https://notebooklm.google.com/notebook/cfbd64d0-3fe1-4b18-b709-03bdb8d9625d',
                 aiDesc: 'צ\'אט חכם על החומר'
@@ -395,10 +395,17 @@
             if(!data) return;
             document.getElementById('modalTitle').innerText = data.title;
             optionsContainer.innerHTML = '';
+            
+            // כפתור לאתר/מחשבון
             if (data.siteUrl) {
-                optionsContainer.innerHTML += `<a href="${data.siteUrl}" class="option-btn opt-site"><div class="opt-text" style="flex:1"><h4>חומרי עזר ונוסחאות</h4><p>${data.siteDesc}</p></div><div class="opt-icon"><i class="far fa-file-alt"></i></div></a>`;
+                optionsContainer.innerHTML += `<a href="${data.siteUrl}" class="option-btn opt-site"><div class="opt-text" style="flex:1"><h4>כניסה למערכת / חומרים</h4><p>${data.siteDesc}</p></div><div class="opt-icon"><i class="far fa-file-alt"></i></div></a>`;
             }
-            optionsContainer.innerHTML += `<a href="${data.aiUrl}" target="_blank" class="option-btn opt-notebook"><div class="opt-text" style="flex:1"><h4>המחברת החכמה (AI)</h4><p>${data.aiDesc}</p></div><div class="opt-icon"><i class="fas fa-sparkles"></i></div></a>`;
+            
+            // כפתור AI (מוצג רק אם יש קישור אמיתי)
+            if (data.aiUrl && data.aiUrl !== '#') {
+                optionsContainer.innerHTML += `<a href="${data.aiUrl}" target="_blank" class="option-btn opt-notebook"><div class="opt-text" style="flex:1"><h4>המחברת החכמה (AI)</h4><p>${data.aiDesc}</p></div><div class="opt-icon"><i class="fas fa-sparkles"></i></div></a>`;
+            }
+            
             modal.classList.add('open');
         }
 
