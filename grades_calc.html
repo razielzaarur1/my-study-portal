@@ -4,84 +4,426 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>מחשבון ציונים - רזיאל</title>
+    
+    <script>
+        window.process = { env: { NODE_ENV: 'production' } };
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
-    
-    <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
-    
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.0/Recharts.min.js"></script>
     
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .transition-height { transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out; }
+        .recharts-cartesian-axis-tick-value { font-size: 11px; }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        .custom-tooltip {
+            background-color: rgba(255, 255, 255, 0.95);
+            border: 1px solid #e2e8f0;
+            padding: 8px 12px;
+            border-radius: 6px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            text-align: right;
+            direction: rtl;
+        }
+        .secret-trigger:active { transform: scale(0.95); }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
+    
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useMemo } = React;
-        // Recharts נטען כעת מהגרסה הממוזערת שזמינה בחלון הדפדפן
+        const { useState, useMemo, useCallback, useEffect } = React;
         const { 
-            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
-            ResponsiveContainer, Cell, PieChart, Pie, AreaChart, 
-            Area, ReferenceLine 
-        } = window.Recharts; 
+            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+            ResponsiveContainer, Cell, PieChart, Pie, ComposedChart, 
+            Area, Scatter, ReferenceLine, LabelList 
+        } = window.Recharts;
 
-        // רכיב עזר לאייקונים
-        const Icon = ({ name, className = "", size }) => {
-            const icons = {
-                Plus: "fa-plus",
-                Trash2: "fa-trash-can",
-                Calculator: "fa-calculator",
-                TrendingUp: "fa-arrow-trend-up",
-                Activity: "fa-chart-simple",
-                PieIcon: "fa-chart-pie",
-                BarIcon: "fa-chart-column",
-                Sigma: "fa-square-root-variable"
-            };
-            return <i className={`fas ${icons[name] || 'fa-circle'} ${className}`} style={{fontSize: size || 'inherit'}}></i>;
-        };
+        // --- הגדרות GitHub ---
+        const GITHUB_OWNER = "razielzaarur1";
+        const GITHUB_REPO = "my-study-portal";
+        const GITHUB_FILE_PATH = "courses.json";
+        const ADMIN_PASSWORD = "0408"; 
 
-        const INITIAL_COURSES = [
-            { id: 1, name: 'חדו״א 1', grade: 88, credits: 5.0, active: true },
-            { id: 2, name: 'אלגברה ליניארית', grade: 72, credits: 4.5, active: true },
-            { id: 3, name: 'מבוא למדעי המחשב', grade: 95, credits: 6.0, active: true },
-            { id: 4, name: 'פיזיקה 1', grade: 65, credits: 3.5, active: true },
+        const YEARS = [1, 2, 3, 4];
+        const SEMESTERS = [
+            { key: 'A', label: "סמסטר א'" },
+            { key: 'B', label: "סמסטר ב'" }
         ];
 
+        // נתוני גיבוי למקרה חירום
+        const BACKUP_COURSES = [
+            { id: 1, year: 1, semester: 'A', name: 'קורס לדוגמה', grade: 0, credits: 3.5, active: false }
+        ];
+
+        // --- פונקציות הצפנה פשוטה (XOR) ---
+        const simpleEncrypt = (text, secret) => {
+            try {
+                let result = '';
+                for(let i = 0; i < text.length; i++) {
+                    result += String.fromCharCode(text.charCodeAt(i) ^ secret.charCodeAt(i % secret.length));
+                }
+                return btoa(result); // המרה ל-Base64 לשמירה נוחה
+            } catch (e) { return null; }
+        };
+
+        const simpleDecrypt = (encoded, secret) => {
+            try {
+                let text = atob(encoded); // פענוח מ-Base64
+                let result = '';
+                for(let i = 0; i < text.length; i++) {
+                    result += String.fromCharCode(text.charCodeAt(i) ^ secret.charCodeAt(i % secret.length));
+                }
+                return result;
+            } catch (e) { return null; }
+        };
+
+        const Icon = ({ name, className = "", onClick }) => {
+            const map = {
+                ChevronDown: "fa-chevron-down",
+                ChevronLeft: "fa-chevron-left",
+                Plus: "fa-plus",
+                Trash: "fa-trash-can",
+                Calc: "fa-calculator",
+                Chart: "fa-chart-pie",
+                Lock: "fa-lock",
+                Unlock: "fa-lock-open",
+                Refresh: "fa-rotate-right",
+                Save: "fa-floppy-disk",
+                Cloud: "fa-cloud-arrow-up",
+                Key: "fa-key"
+            };
+            return <i onClick={onClick} className={`fas ${map[name] || ''} ${className}`}></i>;
+        };
+
+        const getGradeColor = (g) => g >= 85 ? '#10B981' : g >= 70 ? '#F59E0B' : '#EF4444';
+
+        // --- שורת קורס ---
+        const CourseRow = React.memo(({ course, updateCourse, removeCourse, isAdmin }) => {
+            const handleFocus = (e) => e.target.select();
+
+            return (
+                <div className="flex flex-col sm:flex-row items-center gap-2 p-3 bg-white border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors group">
+                    <div className="w-full sm:w-auto flex items-center justify-between sm:justify-center">
+                        <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-500 sm:hidden">
+                            <span>לחשב?</span>
+                            <input type="checkbox" checked={course.active} onChange={(e) => updateCourse(course.id, 'active', e.target.checked)} className="w-5 h-5 accent-indigo-600" />
+                        </label>
+                        <input type="checkbox" checked={course.active} onChange={(e) => updateCourse(course.id, 'active', e.target.checked)} className="hidden sm:block w-5 h-5 accent-indigo-600 cursor-pointer" />
+                    </div>
+
+                    <div className="flex-grow w-full sm:w-auto">
+                        <input 
+                            type="text" 
+                            value={course.name} 
+                            disabled={!isAdmin}
+                            onChange={(e) => updateCourse(course.id, 'name', e.target.value)} 
+                            className={`w-full bg-transparent border-b outline-none px-1 ${isAdmin ? 'border-amber-300 focus:border-amber-500 bg-amber-50' : 'border-transparent text-slate-700 font-medium'}`} 
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
+                        <div className="flex flex-col">
+                            <label className="text-[10px] text-slate-400 sm:hidden">ציון</label>
+                            <input 
+                                type="number" 
+                                min="0" max="100" 
+                                value={course.grade} 
+                                onFocus={handleFocus}
+                                onChange={(e) => updateCourse(course.id, 'grade', Math.min(100, Math.max(0, Number(e.target.value))))} 
+                                className={`w-full sm:w-16 text-center rounded border p-1 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-100 ${getGradeColor(course.grade).replace('#','text-')}`} 
+                                style={{color: getGradeColor(course.grade)}} 
+                            />
+                        </div>
+                        <div className="flex flex-col">
+                            <label className="text-[10px] text-slate-400 sm:hidden">נ"ז</label>
+                            <input 
+                                type="number" 
+                                min="0" step="0.5" 
+                                value={course.credits} 
+                                disabled={!isAdmin}
+                                onFocus={handleFocus}
+                                onChange={(e) => updateCourse(course.id, 'credits', Number(e.target.value))} 
+                                className={`w-full sm:w-14 text-center rounded border p-1 text-sm text-slate-600 outline-none ${isAdmin ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-transparent'}`} 
+                            />
+                        </div>
+                    </div>
+
+                    {isAdmin && (
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end mt-2 sm:mt-0">
+                            <select 
+                                value={`${course.year}-${course.semester}`} 
+                                onChange={(e) => {
+                                    const [y, s] = e.target.value.split('-');
+                                    updateCourse(course.id, 'year', Number(y));
+                                    updateCourse(course.id, 'semester', s);
+                                }}
+                                className="text-xs bg-amber-50 rounded px-2 py-1 border border-amber-200 outline-none text-amber-800"
+                            >
+                                {YEARS.map(y => SEMESTERS.map(s => (
+                                    <option key={`${y}-${s.key}`} value={`${y}-${s.key}`}>שנה {y} - {s.label}</option>
+                                )))}
+                            </select>
+                            
+                            <button onClick={() => removeCourse(course.id)} className="text-slate-300 hover:text-rose-500 p-1">
+                                <Icon name="Trash" />
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        });
+
+        // --- Tooltip לפעמון ---
+        const CustomBellTooltip = ({ active, payload, label }) => {
+            if (active && payload && payload.length) {
+                const data = payload[0].payload;
+                if (data.name) {
+                    return (
+                        <div className="custom-tooltip">
+                            <p className="font-bold text-slate-800 text-sm mb-1">{data.name}</p>
+                            <p className="text-indigo-600 font-bold">ציון: {data.x}</p>
+                        </div>
+                    );
+                }
+                return (
+                    <div className="custom-tooltip">
+                        <p className="text-slate-500 text-xs">הסתברות לציון {label}</p>
+                    </div>
+                );
+            }
+            return null;
+        };
+
         function App() {
-            const [courses, setCourses] = useState(INITIAL_COURSES);
+            const [courses, setCourses] = useState(BACKUP_COURSES);
+            const [expandedYears, setExpandedYears] = useState({});
+            const [expandedSemesters, setExpandedSemesters] = useState({});
+            
+            // ניהול אדמין
+            const [isAdmin, setIsAdmin] = useState(false);
+            const [showLogin, setShowLogin] = useState(false);
+            
+            // שדות לוגין
+            const [inputPassword, setInputPassword] = useState('');
+            const [inputToken, setInputToken] = useState(''); // רק להגדרה ראשונית
+            const [isFirstSetup, setIsFirstSetup] = useState(false);
 
-            const addCourse = () => {
-                const newId = courses.length > 0 ? Math.max(...courses.map(c => c.id)) + 1 : 1;
-                setCourses([...courses, { id: newId, name: '', grade: 0, credits: 0, active: true }]);
+            const [isSaving, setIsSaving] = useState(false);
+            const [secretClickCount, setSecretClickCount] = useState(0);
+
+            // --- טעינת נתונים ---
+            useEffect(() => {
+                const fetchData = async () => {
+                    try {
+                        // בדיקה אם יש טוקן מוצפן בזיכרון (רק כדי לדעת אם זה setup ראשוני)
+                        const encryptedToken = localStorage.getItem('enc_gh_token');
+                        setIsFirstSetup(!encryptedToken);
+
+                        // טעינת הקורסים מהרשת
+                        const response = await fetch(GITHUB_FILE_PATH);
+                        if (!response.ok) throw new Error("Local file not found");
+                        const globalData = await response.json();
+                        
+                        // מיזוג עם נתוני משתמש מקומיים
+                        const localData = JSON.parse(localStorage.getItem('my_degree_grades') || '{}');
+                        const mergedCourses = globalData.map(course => {
+                            const userCourse = localData[course.id];
+                            return userCourse ? { ...course, grade: userCourse.grade, active: userCourse.active } : course;
+                        });
+                        setCourses(mergedCourses);
+                    } catch (err) {
+                        console.log("Using backup", err);
+                        const saved = localStorage.getItem('my_degree_full_backup');
+                        if (saved) setCourses(JSON.parse(saved));
+                    }
+                };
+                fetchData();
+            }, []);
+
+            // שמירת נתוני משתמש רגיל
+            useEffect(() => {
+                if (!isAdmin && courses.length > 1) {
+                    const userGrades = {};
+                    courses.forEach(c => userGrades[c.id] = { grade: c.grade, active: c.active });
+                    localStorage.setItem('my_degree_grades', JSON.stringify(userGrades));
+                    localStorage.setItem('my_degree_full_backup', JSON.stringify(courses));
+                }
+            }, [courses, isAdmin]);
+
+            // --- לוגיקה לטריק הסודי ---
+            const handleSecretClick = () => {
+                if (isAdmin) return;
+                setSecretClickCount(prev => prev + 1);
+                if (window.clickTimeout) clearTimeout(window.clickTimeout);
+                window.clickTimeout = setTimeout(() => setSecretClickCount(0), 1000);
+
+                if (secretClickCount + 1 >= 3) {
+                    setShowLogin(true);
+                    setSecretClickCount(0);
+                    setInputPassword('');
+                }
             };
 
-            const removeCourse = (id) => {
-                setCourses(courses.filter(c => c.id !== id));
+            const handleLogin = (e) => {
+                e.preventDefault();
+                
+                // בדיקת סיסמה
+                if (inputPassword !== ADMIN_PASSWORD) {
+                    return alert('סיסמה שגויה');
+                }
+
+                // אם זו הגדרה ראשונית, צריך גם טוקן
+                if (isFirstSetup) {
+                    if (inputToken.length < 10) return alert('אנא הזן GitHub Token תקין להגדרה ראשונית');
+                    
+                    // הצפנה ושמירה
+                    const encrypted = simpleEncrypt(inputToken, ADMIN_PASSWORD);
+                    if (encrypted) {
+                        localStorage.setItem('enc_gh_token', encrypted);
+                        alert('הטוקן הוצפן ונשמר בהצלחה בדפדפן זה!');
+                        setIsAdmin(true);
+                        setShowLogin(false);
+                        setIsFirstSetup(false);
+                    } else {
+                        alert('שגיאה בהצפנה');
+                    }
+                } else {
+                    // כניסה רגילה - יש כבר טוקן שמור
+                    // אנחנו רק מוודאים שהסיסמה פותחת אותו (בדיקת שפיות)
+                    const encrypted = localStorage.getItem('enc_gh_token');
+                    const decrypted = simpleDecrypt(encrypted, ADMIN_PASSWORD);
+                    
+                    if (decrypted && decrypted.startsWith('gh')) { // בדיקה בסיסית שטוקן נראה תקין
+                        setIsAdmin(true);
+                        setShowLogin(false);
+                    } else {
+                        // אם הפענוח נכשל או שהטוקן לא תקין - אולי הסיסמה שונתה?
+                        // נאפשר להזין מחדש
+                        if(confirm('הטוקן השמור לא תקין או שהפענוח נכשל. האם להגדיר מחדש את הטוקן?')) {
+                            setIsFirstSetup(true);
+                        }
+                    }
+                }
             };
 
-            const updateCourse = (id, field, value) => {
-                setCourses(courses.map(c => 
-                    c.id === id ? { ...c, [field]: value } : c
-                ));
+            // --- שמירה ל-GitHub ---
+            const saveToGitHub = async () => {
+                setIsSaving(true);
+                try {
+                    // שליפת הטוקן המוצפן ופענוח שלו בזמן אמת
+                    const encryptedToken = localStorage.getItem('enc_gh_token');
+                    const realToken = simpleDecrypt(encryptedToken, ADMIN_PASSWORD);
+
+                    if (!realToken) throw new Error("כשל בפענוח הטוקן. נסה להתחבר מחדש.");
+
+                    // קבלת SHA
+                    const getRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE_PATH}`, {
+                        headers: { "Authorization": `token ${realToken}` }
+                    });
+                    if (!getRes.ok) throw new Error("אין גישה ל-GitHub. בדוק את הטוקן.");
+                    
+                    const getData = await getRes.json();
+                    
+                    // הכנת נתונים (ללא ציונים)
+                    const cleanCourses = courses.map(c => ({
+                        id: c.id, year: c.year, semester: c.semester, 
+                        name: c.name, credits: c.credits, 
+                        grade: 0, active: false 
+                    }));
+                    
+                    const content = btoa(unescape(encodeURIComponent(JSON.stringify(cleanCourses, null, 2))));
+
+                    // עדכון
+                    const putRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE_PATH}`, {
+                        method: "PUT",
+                        headers: {
+                            "Authorization": `token ${realToken}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            message: "Admin update via App",
+                            content: content,
+                            sha: getData.sha
+                        })
+                    });
+
+                    if (putRes.ok) {
+                        alert("הנתונים נשמרו בהצלחה ב-GitHub!");
+                    } else {
+                        throw new Error("שגיאה בשמירה.");
+                    }
+
+                } catch (error) {
+                    alert("שגיאה: " + error.message);
+                    if (error.message.includes("טוקן")) {
+                        setIsFirstSetup(true); // אפשר למשתמש לתקן את הטוקן
+                        setShowLogin(true);
+                    }
+                } finally {
+                    setIsSaving(false);
+                }
             };
 
+            const toggleYear = (year) => setExpandedYears(prev => ({ ...prev, [year]: !prev[year] }));
+            const toggleSemester = (year, sem) => setExpandedSemesters(prev => ({ ...prev, [`${year}-${sem}`]: !prev[`${year}-${sem}`] }));
+
+            const updateCourse = useCallback((id, field, value) => {
+                setCourses(prevCourses => prevCourses.map(c => {
+                    if (c.id !== id) return c;
+                    if (field === 'year' || field === 'semester') {
+                        const newYear = field === 'year' ? value : c.year;
+                        const newSem = field === 'semester' ? value : c.semester;
+                        setExpandedYears(prev => ({ ...prev, [newYear]: true }));
+                        setExpandedSemesters(prev => ({ ...prev, [`${newYear}-${newSem}`]: true }));
+                    }
+                    return { ...c, [field]: value };
+                }));
+            }, []);
+
+            const addCourse = useCallback((year, semester) => {
+                setCourses(prev => {
+                    const newId = prev.length > 0 ? Math.max(...prev.map(c => c.id)) + 1 : 1;
+                    return [...prev, { id: newId, year, semester, name: 'קורס חדש', grade: 0, credits: 3.5, active: true }];
+                });
+                setExpandedYears(prev => ({...prev, [year]: true}));
+                setExpandedSemesters(prev => ({...prev, [`${year}-${semester}`]: true}));
+            }, []);
+
+            const removeCourse = useCallback((id) => {
+                if(confirm('למחוק את הקורס לצמיתות?')) {
+                    setCourses(prev => prev.filter(c => c.id !== id));
+                }
+            }, []);
+
+            const resetToken = () => {
+                if(confirm('האם לאפס את נתוני המנהל במחשב זה? תצטרך להזין טוקן מחדש.')) {
+                    localStorage.removeItem('enc_gh_token');
+                    setIsFirstSetup(true);
+                    alert('הנתונים אופסו.');
+                }
+            };
+
+            // --- Stats ---
             const stats = useMemo(() => {
                 const activeCourses = courses.filter(c => c.active && c.credits > 0);
                 const totalCredits = activeCourses.reduce((sum, c) => sum + Number(c.credits), 0);
                 let weightedSum = 0;
-                activeCourses.forEach(c => {
-                    weightedSum += Number(c.grade) * Number(c.credits);
-                });
+                activeCourses.forEach(c => weightedSum += Number(c.grade) * Number(c.credits));
                 const average = totalCredits > 0 ? weightedSum / totalCredits : 0;
-
+                
                 let varianceSum = 0;
                 if (totalCredits > 0) {
                     activeCourses.forEach(c => {
@@ -90,190 +432,323 @@
                     });
                 }
                 const stdDev = totalCredits > 0 ? Math.sqrt(varianceSum / totalCredits) : 0;
-
-                return { totalCredits, average, stdDev, activeCourses };
+                return { totalCredits, average, stdDev, activeCourses, weightedSum };
             }, [courses]);
 
+            // Charts
             const barData = stats.activeCourses.map(c => ({
-                name: c.name || 'קורס ללא שם',
-                grade: Number(c.grade),
-                credits: Number(c.credits)
+                name: c.name.length > 15 ? c.name.substring(0, 15) + '...' : c.name,
+                full: c.name,
+                grade: Number(c.grade)
             }));
 
-            const getBarColor = (grade) => {
-                if (grade >= 85) return '#10B981';
-                if (grade >= 70) return '#F59E0B';
-                return '#EF4444';
-            };
+            const pieData = stats.activeCourses.map(c => {
+                const val = Number(c.grade) * Number(c.credits);
+                return {
+                    name: c.name,
+                    value: val,
+                    percent: stats.weightedSum > 0 ? (val / stats.weightedSum) * 100 : 0
+                };
+            });
 
-            const pieData = stats.activeCourses.map(c => ({
-                name: c.name || 'ללא שם',
-                value: Number(c.grade) * Number(c.credits)
-            }));
-
-            const bellCurveData = useMemo(() => {
-                if (stats.activeCourses.length < 2) return [];
+            const bellChartData = useMemo(() => {
+                if (stats.activeCourses.length < 2) return { curve: [], points: [] };
                 const mean = stats.average;
                 const sd = Math.max(stats.stdDev, 5);
-                const points = [];
-                for (let x = 0; x <= 100; x += 2) {
+                const curve = [];
+                for (let x = 40; x <= 100; x += 1) {
                     const exponent = -0.5 * Math.pow((x - mean) / sd, 2);
                     const y = (1 / (sd * Math.sqrt(2 * Math.PI))) * Math.exp(exponent);
-                    points.push({ x, y: parseFloat(y.toFixed(5)) });
+                    curve.push({ x, y: parseFloat(y.toFixed(4)) });
                 }
-                return points;
-            }, [stats.average, stats.stdDev, stats.activeCourses.length]);
+                const points = stats.activeCourses
+                    .filter(c => Number(c.grade) > 40)
+                    .map(c => {
+                        const grade = Number(c.grade);
+                        const exponent = -0.5 * Math.pow((grade - mean) / sd, 2);
+                        const y = (1 / (sd * Math.sqrt(2 * Math.PI))) * Math.exp(exponent);
+                        return { x: grade, y: y * 1.05, name: c.name };
+                    });
+                return { curve, points };
+            }, [stats.average, stats.stdDev, stats.activeCourses]);
 
             return (
-                <div className="min-h-screen p-4 md:p-8">
-                    {/* Header */}
+                <div className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto pb-20">
+                    
                     <header className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
                         <div>
-                            <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
-                                <Icon name="Calculator" className="text-indigo-600" size={32} />
+                            <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3 select-none">
+                                <Icon 
+                                    name="Calc" 
+                                    className={`text-indigo-600 cursor-pointer secret-trigger transition-all ${secretClickCount > 0 ? 'scale-90 text-indigo-400' : ''}`} 
+                                    onClick={handleSecretClick}
+                                />
                                 מחשבון ציונים אקדמי
                             </h1>
-                            <p className="text-slate-500 mt-2 text-lg">ניהול ציונים וניתוח ביצועים בזמן אמת</p>
+                            <p className="text-slate-500 mt-1">
+                                {isAdmin ? <span className="text-amber-600 font-bold animate-pulse">מצב מנהל פעיל</span> : "ניהול תואר וניתוח נתונים"}
+                            </p>
                         </div>
-                        <a href="index.html" className="text-indigo-600 hover:underline font-medium flex items-center gap-2">
-                             חזרה לפורטל הראשי <i className="fas fa-arrow-left"></i>
-                        </a>
+                        <div className="flex items-center gap-3">
+                            <a href="index.html" className="text-indigo-600 hover:bg-indigo-50 px-4 py-2 rounded-lg font-medium transition-colors">
+                                חזרה לפורטל <Icon name="ChevronLeft" className="mr-2" />
+                            </a>
+                        </div>
                     </header>
 
-                    {/* Metrics */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col items-center justify-center relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-4 opacity-10">
-                                <Icon name="TrendingUp" size={64} className="text-indigo-600" />
+                    {/* Login Modal */}
+                    {showLogin && (
+                        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm" onClick={() => setShowLogin(false)}>
+                            <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+                                <h3 className="text-xl font-bold mb-4 text-center text-slate-800">
+                                    {isFirstSetup ? "הגדרה ראשונית למנהל" : "כניסת מנהל מערכת"}
+                                </h3>
+                                
+                                <form onSubmit={handleLogin} className="flex flex-col gap-4">
+                                    <input 
+                                        type="password" 
+                                        autoFocus
+                                        placeholder="סיסמת כניסה (0408)" 
+                                        className="border border-slate-300 rounded-lg p-3 text-center outline-none focus:border-indigo-500 transition-all"
+                                        value={inputPassword}
+                                        onChange={e => setInputPassword(e.target.value)}
+                                    />
+                                    
+                                    {isFirstSetup && (
+                                        <div className="animate-fade-in space-y-2">
+                                            <p className="text-xs text-slate-500 text-center">פעם ראשונה: הזן את הטוקן של GitHub כדי שנוכל לשמור אותו מוצפן.</p>
+                                            <input 
+                                                type="password" 
+                                                placeholder="הדבק GitHub Token כאן" 
+                                                className="border border-slate-300 rounded-lg p-3 w-full text-center outline-none focus:border-indigo-500 transition-all text-xs"
+                                                value={inputToken}
+                                                onChange={e => setInputToken(e.target.value)}
+                                            />
+                                        </div>
+                                    )}
+
+                                    <button type="submit" className="bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
+                                        {isFirstSetup ? "שמור והתחבר" : "כניסה"}
+                                    </button>
+                                </form>
                             </div>
-                            <h3 className="text-slate-500 font-medium mb-2">ממוצע משוקלל</h3>
-                            <span className={`text-5xl font-bold ${stats.average >= 85 ? 'text-emerald-600' : stats.average >= 70 ? 'text-amber-500' : 'text-slate-700'}`}>
-                                {stats.average.toFixed(2)}
-                            </span>
                         </div>
-                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col items-center justify-center">
-                            <h3 className="text-slate-500 font-medium mb-2">סה"כ נ"ז</h3>
-                            <span className="text-5xl font-bold text-slate-700">{stats.totalCredits.toFixed(1)}</span>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                            <div>
+                                <div className="text-slate-500 text-sm font-medium mb-1">ממוצע משוקלל</div>
+                                <div className={`text-4xl font-bold`} style={{color: getGradeColor(stats.average)}}>
+                                    {stats.average.toFixed(2)}
+                                </div>
+                            </div>
+                            <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center text-xl">📊</div>
                         </div>
-                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col items-center justify-center">
-                            <h3 className="text-slate-500 font-medium mb-2">סטיית תקן</h3>
-                            <span className="text-5xl font-bold text-slate-700">{stats.stdDev.toFixed(2)}</span>
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                            <div>
+                                <div className="text-slate-500 text-sm font-medium mb-1">נ"ז (פעיל)</div>
+                                <div className="text-4xl font-bold text-slate-700">{stats.totalCredits}</div>
+                            </div>
+                            <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center text-xl">🎓</div>
+                        </div>
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                            <div>
+                                <div className="text-slate-500 text-sm font-medium mb-1">קורסים פעילים</div>
+                                <div className="text-4xl font-bold text-slate-700">{stats.activeCourses.length}</div>
+                            </div>
+                            <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center text-xl">✅</div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-                        {/* Table */}
-                        <div className="xl:col-span-7 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-                            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-50/50">
-                                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                                    <Icon name="Activity" className="text-indigo-600" />
-                                    רשימת קורסים
-                                </h2>
-                                <button onClick={addCourse} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-all text-sm font-medium shadow-sm">
-                                    <Icon name="Plus" size={18} /> הוסף קורס
-                                </button>
-                            </div>
-                            <div className="overflow-x-auto p-2">
-                                <table className="w-full text-right">
-                                    <thead>
-                                        <tr className="text-slate-500 text-sm border-b border-slate-100">
-                                            <th className="p-4 w-16 text-center">לחישוב?</th>
-                                            <th className="p-4">שם הקורס</th>
-                                            <th className="p-4 w-32">ציון</th>
-                                            <th className="p-4 w-32">נ"ז</th>
-                                            <th className="p-4 w-16"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-50">
-                                        {courses.map((course) => (
-                                            <tr key={course.id} className="hover:bg-slate-50 transition-colors">
-                                                <td className="p-3 text-center">
-                                                    <input type="checkbox" checked={course.active} onChange={(e) => updateCourse(course.id, 'active', e.target.checked)} className="w-5 h-5 accent-indigo-600 cursor-pointer" />
-                                                </td>
-                                                <td className="p-3">
-                                                    <input type="text" value={course.name} onChange={(e) => updateCourse(course.id, 'name', e.target.value)} placeholder="שם הקורס..." className="w-full bg-transparent border-b border-transparent focus:border-indigo-500 outline-none" />
-                                                </td>
-                                                <td className="p-3">
-                                                    <input type="number" min="0" max="100" value={course.grade} onChange={(e) => updateCourse(course.id, 'grade', Math.min(100, Math.max(0, Number(e.target.value))))} className={`w-full text-center rounded-lg border p-1 ${course.grade >= 85 ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : course.grade < 70 ? 'text-rose-600 bg-rose-50 border-rose-100' : 'text-slate-800 border-slate-200'}`} />
-                                                </td>
-                                                <td className="p-3">
-                                                    <input type="number" min="0" step="0.5" value={course.credits} onChange={(e) => updateCourse(course.id, 'credits', Number(e.target.value))} className="w-full text-center rounded-lg border border-slate-200 p-1 text-slate-600" />
-                                                </td>
-                                                <td className="p-3 text-center">
-                                                    <button onClick={() => removeCourse(course.id)} className="text-slate-300 hover:text-rose-500 transition-colors p-2">
-                                                        <Icon name="Trash2" size={18} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        
+                        <div className="lg:col-span-7 space-y-4">
+                            {isAdmin && (
+                                <div className="sticky top-4 z-10 bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-lg flex justify-between items-center mb-6">
+                                    <div className="text-sm text-amber-900">
+                                        <p className="font-bold"><i className="fas fa-lock-open ml-2"></i> מצב עריכה פתוח</p>
+                                        <p className="opacity-80">שינויים נשמרים בענן.</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={resetToken} title="איפוס מפתחות במחשב זה" className="text-amber-500 hover:text-amber-700 p-2">
+                                            <Icon name="Key" />
+                                        </button>
+                                        <button 
+                                            onClick={saveToGitHub} 
+                                            disabled={isSaving}
+                                            className={`text-xs ${isSaving ? 'bg-slate-400' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded-lg font-bold shadow-sm transition-all flex items-center gap-2`}
+                                        >
+                                            {isSaving ? <Icon name="Refresh" className="animate-spin"/> : <Icon name="Cloud" />}
+                                            {isSaving ? "שומר..." : "שמור שינויים"}
+                                        </button>
+                                        <button onClick={() => setIsAdmin(false)} className="text-xs bg-white border border-amber-300 text-amber-700 px-3 py-2 rounded-lg hover:bg-amber-100">
+                                            יציאה
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {YEARS.map(year => (
+                                <div key={year} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                                    <div 
+                                        className="p-4 bg-slate-50 cursor-pointer hover:bg-slate-100 flex justify-between items-center select-none border-b border-slate-100"
+                                        onClick={() => toggleYear(year)}
+                                    >
+                                        <h2 className="font-bold text-lg text-slate-700">שנה {year === 1 ? "א'" : year === 2 ? "ב'" : year === 3 ? "ג'" : "ד'"}</h2>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs bg-white border border-slate-200 px-2 py-1 rounded-md text-slate-500">
+                                            {courses.filter(c => c.year === year && c.active).length} פעילים
+                                            </span>
+                                            <Icon name="ChevronDown" className={`transition-transform duration-300 ${expandedYears[year] ? 'rotate-180' : ''} text-slate-400`} />
+                                        </div>
+                                    </div>
+
+                                    <div className={`transition-height overflow-hidden ${expandedYears[year] ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                                        <div className="p-2 space-y-2 bg-slate-50/50">
+                                            {SEMESTERS.map(sem => {
+                                                const semCourses = courses.filter(c => c.year === year && c.semester === sem.key);
+                                                const isExpanded = expandedSemesters[`${year}-${sem.key}`];
+                                                
+                                                return (
+                                                    <div key={sem.key} className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                                                        <div 
+                                                            className="px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-indigo-50/50 transition-colors"
+                                                            onClick={() => toggleSemester(year, sem.key)}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`w-2 h-2 rounded-full ${semCourses.some(c=>c.active) ? 'bg-indigo-500' : 'bg-slate-300'}`}></div>
+                                                                <span className="font-medium text-slate-700">{sem.label}</span>
+                                                                <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{semCourses.length} קורסים</span>
+                                                            </div>
+                                                            <Icon name="ChevronDown" className={`text-xs text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                                        </div>
+
+                                                        {isExpanded && (
+                                                            <div className="border-t border-slate-100">
+                                                                {semCourses.length > 0 ? (
+                                                                    semCourses.map(course => (
+                                                                        <CourseRow 
+                                                                            key={course.id} 
+                                                                            course={course} 
+                                                                            updateCourse={updateCourse} 
+                                                                            removeCourse={removeCourse}
+                                                                            isAdmin={isAdmin} 
+                                                                        />
+                                                                    ))
+                                                                ) : (
+                                                                    <div className="p-4 text-center text-slate-400 text-sm italic">אין קורסים בסמסטר זה</div>
+                                                                )}
+                                                                {isAdmin && (
+                                                                    <button 
+                                                                        onClick={() => addCourse(year, sem.key)}
+                                                                        className="w-full py-3 text-sm text-amber-600 font-medium hover:bg-amber-50 transition-colors flex items-center justify-center gap-2 border-t border-dashed border-amber-200"
+                                                                    >
+                                                                        <Icon name="Plus" /> הוסף קורס (מנהל)
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
 
                         {/* Charts */}
-                        <div className="xl:col-span-5 flex flex-col gap-6">
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-6 flex items-center gap-2">
-                                    <Icon name="BarIcon" size={16} /> הישגים לפי קורס
+                        <div className="lg:col-span-5 space-y-6">
+                            
+                            {/* Bar Chart */}
+                            <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                                <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 border-b pb-2">
+                                    <Icon name="Chart" className="text-indigo-500" />
+                                    התפלגות ציונים
                                 </h3>
-                                <div className="h-48 w-full">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={barData} layout="horizontal">
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                            <XAxis dataKey="name" hide />
-                                            <YAxis domain={[0, 100]} hide />
-                                            <Tooltip contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}} />
-                                            <Bar dataKey="grade" radius={[4, 4, 0, 0]} barSize={40}>
-                                                {barData.map((entry, index) => <Cell key={`cell-${index}`} fill={getBarColor(entry.grade)} />)}
-                                            </Bar>
-                                        </BarChart>
-                                    </ResponsiveContainer>
+                                <div className="h-80 w-full">
+                                    {stats.activeCourses.length > 0 ? (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={barData} margin={{top: 20, right: 10, left: 10, bottom: 80}}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                                <XAxis dataKey="name" interval={0} angle={-45} textAnchor="end" height={80} tick={{fontSize: 11}} />
+                                                <YAxis domain={[0, 100]} />
+                                                <Tooltip contentStyle={{borderRadius: '8px', border: 'none'}} />
+                                                <ReferenceLine y={stats.average} stroke="#6366f1" strokeDasharray="5 5" label={{ position: 'top', value: 'ממוצע', fill: '#6366f1', fontSize: 12 }} />
+                                                <Bar dataKey="grade" radius={[4, 4, 0, 0]} barSize={30}>
+                                                    {barData.map((entry, index) => <Cell key={`cell-${index}`} fill={getGradeColor(entry.grade)} />)}
+                                                    <LabelList dataKey="grade" position="top" style={{fontSize: '11px', fill: '#475569', fontWeight: 'bold'}} />
+                                                </Bar>
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    ) : <div className="h-full flex items-center justify-center text-slate-400">סמן קורסים להצגה</div>}
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col">
-                                    <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                        <Icon name="PieIcon" size={16} /> השפעה
-                                    </h3>
-                                    <div className="h-40 w-full flex-grow">
+                            {/* Pie Chart */}
+                            <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                                <h3 className="font-bold text-slate-700 mb-4 border-b pb-2">השפעה על הממוצע (%)</h3>
+                                <div className="h-64">
+                                    {stats.activeCourses.length > 0 ? (
                                         <ResponsiveContainer width="100%" height="100%">
                                             <PieChart>
-                                                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={5}>
-                                                    {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={`hsl(220, 70%, ${50 + (index * 5)}%)`} />)}
+                                                <Pie 
+                                                    data={pieData} 
+                                                    dataKey="value" 
+                                                    nameKey="name" 
+                                                    cx="50%" cy="50%" 
+                                                    innerRadius={40} 
+                                                    outerRadius={80} 
+                                                    paddingAngle={2}
+                                                    label={({ percent }) => `${(percent * 100).toFixed(1)}%`}
+                                                >
+                                                    {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={`hsl(220, 70%, ${50 + (index * 6)}%)`} />)}
                                                 </Pie>
-                                                <Tooltip />
+                                                <Tooltip formatter={(value, name, props) => [`${(props.payload.percent * 100).toFixed(2)}%`, name]} />
                                             </PieChart>
                                         </ResponsiveContainer>
-                                    </div>
-                                </div>
-
-                                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col">
-                                    <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                        <Icon name="Sigma" size={16} /> התפלגות
-                                    </h3>
-                                    <div className="h-40 w-full flex-grow">
-                                        {stats.activeCourses.length > 1 ? (
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <AreaChart data={bellCurveData}>
-                                                    <defs>
-                                                        <linearGradient id="colorGaussian" x1="0" y1="0" x2="0" y2="1">
-                                                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4}/>
-                                                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                                                        </linearGradient>
-                                                    </defs>
-                                                    <Tooltip />
-                                                    <Area type="monotone" dataKey="y" stroke="#6366f1" fillOpacity={1} fill="url(#colorGaussian)" />
-                                                    <ReferenceLine x={stats.average} stroke="#F59E0B" strokeDasharray="3 3" />
-                                                </AreaChart>
-                                            </ResponsiveContainer>
-                                        ) : (
-                                            <div className="h-full flex items-center justify-center text-center text-slate-400 text-xs">נדרשים לפחות 2 קורסים</div>
-                                        )}
-                                    </div>
+                                    ) : <div className="h-full flex items-center justify-center text-slate-400">אין נתונים</div>}
                                 </div>
                             </div>
+
+                            {/* Bell Curve */}
+                            <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                                <h3 className="font-bold text-slate-700 mb-4 border-b pb-2">מיקום יחסי (פעמון)</h3>
+                                <div className="h-64">
+                                    {stats.activeCourses.length > 1 ? (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <ComposedChart margin={{top: 10, right: 20, left: 20, bottom: 20}}>
+                                                <XAxis dataKey="x" type="number" domain={[40, 100]} tickCount={7} allowDataOverflow={true} />
+                                                <YAxis hide />
+                                                <Tooltip content={<CustomBellTooltip />} />
+                                                
+                                                <Area 
+                                                    type="monotone" 
+                                                    data={bellChartData.curve} 
+                                                    dataKey="y" 
+                                                    stroke="#8b5cf6" 
+                                                    fill="#8b5cf6" 
+                                                    fillOpacity={0.2} 
+                                                    isAnimationActive={false} 
+                                                />
+                                                <ReferenceLine x={stats.average} stroke="#F59E0B" label={{ value: 'ממוצע', position: 'top', fill: '#F59E0B', fontSize: 10 }} />
+                                                
+                                                <Scatter 
+                                                    data={bellChartData.points} 
+                                                    fill="#ef4444" 
+                                                    isAnimationActive={false}
+                                                >
+                                                    {bellChartData.points.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill="#ef4444" stroke="#fff" strokeWidth={2} />
+                                                    ))}
+                                                </Scatter>
+                                            </ComposedChart>
+                                        </ResponsiveContainer>
+                                    ) : <div className="h-full flex items-center justify-center text-slate-400">נדרשים 2 קורסים לפחות</div>}
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -282,6 +757,7 @@
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
+
     </script>
 </body>
 </html>
