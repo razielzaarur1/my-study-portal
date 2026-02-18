@@ -37,13 +37,32 @@
             direction: rtl;
         }
         .secret-trigger:active { transform: scale(0.95); }
+        /* מסך טעינה/שגיאה */
+        #loading-screen, #error-screen {
+            position: fixed; inset: 0; background: #f8fafc; z-index: 50;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+        }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
     
+    <div id="error-screen" class="hidden">
+        <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+        <h2 class="text-2xl font-bold text-slate-800">שגיאה בטעינת המערכת</h2>
+        <p id="error-message" class="text-slate-600 mt-2">אנא נסה לרענן את הדף</p>
+    </div>
+
     <div id="root"></div>
 
     <script type="text/babel">
+        // בדיקת תקינות ספריות לפני התחלה
+        if (!window.React || !window.ReactDOM || !window.Recharts) {
+            document.getElementById('error-screen').classList.remove('hidden');
+            document.getElementById('error-message').innerText = 'אחת או יותר מהספריות (React/Recharts) לא נטענה כראוי. בדוק חיבור לאינטרנט.';
+            throw new Error("Libraries not loaded");
+        }
+
         const { useState, useMemo, useCallback, useEffect } = React;
         const { 
             BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -54,7 +73,11 @@
         // --- הגדרות GitHub ---
         const GITHUB_OWNER = "razielzaarur1";
         const GITHUB_REPO = "my-study-portal";
-        const GITHUB_FILE_PATH = "grade_calc/courses.json";
+        
+        // תיקון קריטי: הפרדה בין הנתיב לקריאה (מקומי) לבין הנתיב לשמירה (בשרת)
+        const LOCAL_FILE_NAME = "courses.json"; // קריאה מאותה תיקייה
+        const GITHUB_API_PATH = "grade_calc/courses.json"; // נתיב מלא ל-GitHub API
+        
         const ADMIN_PASSWORD = "0408"; 
 
         const YEARS = [1, 2, 3, 4];
@@ -63,25 +86,25 @@
             { key: 'B', label: "סמסטר ב'" }
         ];
 
-        // נתוני גיבוי למקרה חירום
+        // נתוני גיבוי
         const BACKUP_COURSES = [
             { id: 1, year: 1, semester: 'A', name: 'קורס לדוגמה', grade: 0, credits: 3.5, active: false }
         ];
 
-        // --- פונקציות הצפנה פשוטה (XOR) ---
+        // --- פונקציות הצפנה ---
         const simpleEncrypt = (text, secret) => {
             try {
                 let result = '';
                 for(let i = 0; i < text.length; i++) {
                     result += String.fromCharCode(text.charCodeAt(i) ^ secret.charCodeAt(i % secret.length));
                 }
-                return btoa(result); // המרה ל-Base64 לשמירה נוחה
+                return btoa(result);
             } catch (e) { return null; }
         };
 
         const simpleDecrypt = (encoded, secret) => {
             try {
-                let text = atob(encoded); // פענוח מ-Base64
+                let text = atob(encoded);
                 let result = '';
                 for(let i = 0; i < text.length; i++) {
                     result += String.fromCharCode(text.charCodeAt(i) ^ secret.charCodeAt(i % secret.length));
@@ -90,6 +113,7 @@
             } catch (e) { return null; }
         };
 
+        // --- רכיבים ---
         const Icon = ({ name, className = "", onClick }) => {
             const map = {
                 ChevronDown: "fa-chevron-down",
@@ -110,7 +134,6 @@
 
         const getGradeColor = (g) => g >= 85 ? '#10B981' : g >= 70 ? '#F59E0B' : '#EF4444';
 
-        // --- שורת קורס ---
         const CourseRow = React.memo(({ course, updateCourse, removeCourse, isAdmin }) => {
             const handleFocus = (e) => e.target.select();
 
@@ -186,7 +209,6 @@
             );
         });
 
-        // --- Tooltip לפעמון ---
         const CustomBellTooltip = ({ active, payload, label }) => {
             if (active && payload && payload.length) {
                 const data = payload[0].payload;
@@ -211,16 +233,11 @@
             const [courses, setCourses] = useState(BACKUP_COURSES);
             const [expandedYears, setExpandedYears] = useState({});
             const [expandedSemesters, setExpandedSemesters] = useState({});
-            
-            // ניהול אדמין
             const [isAdmin, setIsAdmin] = useState(false);
             const [showLogin, setShowLogin] = useState(false);
-            
-            // שדות לוגין
             const [inputPassword, setInputPassword] = useState('');
-            const [inputToken, setInputToken] = useState(''); // רק להגדרה ראשונית
+            const [inputToken, setInputToken] = useState('');
             const [isFirstSetup, setIsFirstSetup] = useState(false);
-
             const [isSaving, setIsSaving] = useState(false);
             const [secretClickCount, setSecretClickCount] = useState(0);
 
@@ -228,17 +245,16 @@
             useEffect(() => {
                 const fetchData = async () => {
                     try {
-                        // בדיקה אם יש טוקן מוצפן בזיכרון (רק כדי לדעת אם זה setup ראשוני)
                         const encryptedToken = localStorage.getItem('enc_gh_token');
                         setIsFirstSetup(!encryptedToken);
 
-                        // טעינת הקורסים מהרשת
-                       // הוספת חותמת זמן (?t=...) מכריחה את הדפדפן להוריד את הקובץ מחדש
-                        const response = await fetch(GITHUB_FILE_PATH + "?t=" + new Date().getTime());
+                        // שינוי קריטי: טעינה מקומית באמצעות חותמת זמן למניעת Cache
+                        // הקובץ נקרא מתוך התיקייה הנוכחית
+                        const response = await fetch(LOCAL_FILE_NAME + "?t=" + new Date().getTime());
+                        
                         if (!response.ok) throw new Error("Local file not found");
                         const globalData = await response.json();
                         
-                        // מיזוג עם נתוני משתמש מקומיים
                         const localData = JSON.parse(localStorage.getItem('my_degree_grades') || '{}');
                         const mergedCourses = globalData.map(course => {
                             const userCourse = localData[course.id];
@@ -246,7 +262,7 @@
                         });
                         setCourses(mergedCourses);
                     } catch (err) {
-                        console.log("Using backup", err);
+                        console.error("Data load error:", err);
                         const saved = localStorage.getItem('my_degree_full_backup');
                         if (saved) setCourses(JSON.parse(saved));
                     }
@@ -254,7 +270,6 @@
                 fetchData();
             }, []);
 
-            // שמירת נתוני משתמש רגיל
             useEffect(() => {
                 if (!isAdmin && courses.length > 1) {
                     const userGrades = {};
@@ -264,7 +279,6 @@
                 }
             }, [courses, isAdmin]);
 
-            // --- לוגיקה לטריק הסודי ---
             const handleSecretClick = () => {
                 if (isAdmin) return;
                 setSecretClickCount(prev => prev + 1);
@@ -280,21 +294,14 @@
 
             const handleLogin = (e) => {
                 e.preventDefault();
-                
-                // בדיקת סיסמה
-                if (inputPassword !== ADMIN_PASSWORD) {
-                    return alert('סיסמה שגויה');
-                }
+                if (inputPassword !== ADMIN_PASSWORD) return alert('סיסמה שגויה');
 
-                // אם זו הגדרה ראשונית, צריך גם טוקן
                 if (isFirstSetup) {
-                    if (inputToken.length < 10) return alert('אנא הזן GitHub Token תקין להגדרה ראשונית');
-                    
-                    // הצפנה ושמירה
+                    if (inputToken.length < 10) return alert('אנא הזן GitHub Token תקין');
                     const encrypted = simpleEncrypt(inputToken, ADMIN_PASSWORD);
                     if (encrypted) {
                         localStorage.setItem('enc_gh_token', encrypted);
-                        alert('הטוקן הוצפן ונשמר בהצלחה בדפדפן זה!');
+                        alert('הטוקן נשמר בהצלחה!');
                         setIsAdmin(true);
                         setShowLogin(false);
                         setIsFirstSetup(false);
@@ -302,43 +309,34 @@
                         alert('שגיאה בהצפנה');
                     }
                 } else {
-                    // כניסה רגילה - יש כבר טוקן שמור
-                    // אנחנו רק מוודאים שהסיסמה פותחת אותו (בדיקת שפיות)
                     const encrypted = localStorage.getItem('enc_gh_token');
                     const decrypted = simpleDecrypt(encrypted, ADMIN_PASSWORD);
-                    
-                    if (decrypted && decrypted.startsWith('gh')) { // בדיקה בסיסית שטוקן נראה תקין
+                    if (decrypted && decrypted.startsWith('gh')) {
                         setIsAdmin(true);
                         setShowLogin(false);
                     } else {
-                        // אם הפענוח נכשל או שהטוקן לא תקין - אולי הסיסמה שונתה?
-                        // נאפשר להזין מחדש
-                        if(confirm('הטוקן השמור לא תקין או שהפענוח נכשל. האם להגדיר מחדש את הטוקן?')) {
+                        if(confirm('הטוקן השמור לא תקין. להגדיר מחדש?')) {
                             setIsFirstSetup(true);
                         }
                     }
                 }
             };
 
-            // --- שמירה ל-GitHub ---
             const saveToGitHub = async () => {
                 setIsSaving(true);
                 try {
-                    // שליפת הטוקן המוצפן ופענוח שלו בזמן אמת
                     const encryptedToken = localStorage.getItem('enc_gh_token');
                     const realToken = simpleDecrypt(encryptedToken, ADMIN_PASSWORD);
+                    if (!realToken) throw new Error("כשל בפענוח הטוקן");
 
-                    if (!realToken) throw new Error("כשל בפענוח הטוקן. נסה להתחבר מחדש.");
-
-                    // קבלת SHA
-                    const getRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE_PATH}`, {
+                    // שינוי קריטי: שימוש בנתיב ה-API המלא לשמירה
+                    const getRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_API_PATH}`, {
                         headers: { "Authorization": `token ${realToken}` }
                     });
-                    if (!getRes.ok) throw new Error("אין גישה ל-GitHub. בדוק את הטוקן.");
                     
+                    if (!getRes.ok) throw new Error("שגיאת גישה ל-GitHub. בדוק הרשאות טוקן.");
                     const getData = await getRes.json();
                     
-                    // הכנת נתונים (ללא ציונים)
                     const cleanCourses = courses.map(c => ({
                         id: c.id, year: c.year, semester: c.semester, 
                         name: c.name, credits: c.credits, 
@@ -347,8 +345,7 @@
                     
                     const content = btoa(unescape(encodeURIComponent(JSON.stringify(cleanCourses, null, 2))));
 
-                    // עדכון
-                    const putRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE_PATH}`, {
+                    const putRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_API_PATH}`, {
                         method: "PUT",
                         headers: {
                             "Authorization": `token ${realToken}`,
@@ -362,33 +359,30 @@
                     });
 
                     if (putRes.ok) {
-                        alert("הנתונים נשמרו בהצלחה ב-GitHub!");
+                        alert("נשמר בהצלחה! העדכון יופיע באתר תוך מספר דקות.");
                     } else {
-                        throw new Error("שגיאה בשמירה.");
+                        throw new Error("שגיאה בשמירה ל-GitHub.");
                     }
-
                 } catch (error) {
                     alert("שגיאה: " + error.message);
-                    if (error.message.includes("טוקן")) {
-                        setIsFirstSetup(true); // אפשר למשתמש לתקן את הטוקן
-                        setShowLogin(true);
-                    }
                 } finally {
                     setIsSaving(false);
                 }
             };
 
+            // Helpers
             const toggleYear = (year) => setExpandedYears(prev => ({ ...prev, [year]: !prev[year] }));
             const toggleSemester = (year, sem) => setExpandedSemesters(prev => ({ ...prev, [`${year}-${sem}`]: !prev[`${year}-${sem}`] }));
-
+            
             const updateCourse = useCallback((id, field, value) => {
-                setCourses(prevCourses => prevCourses.map(c => {
+                setCourses(prev => prev.map(c => {
                     if (c.id !== id) return c;
                     if (field === 'year' || field === 'semester') {
-                        const newYear = field === 'year' ? value : c.year;
-                        const newSem = field === 'semester' ? value : c.semester;
-                        setExpandedYears(prev => ({ ...prev, [newYear]: true }));
-                        setExpandedSemesters(prev => ({ ...prev, [`${newYear}-${newSem}`]: true }));
+                        // Open destination folder
+                        const y = field === 'year' ? value : c.year;
+                        const s = field === 'semester' ? value : c.semester;
+                        setExpandedYears(p => ({...p, [y]: true}));
+                        setExpandedSemesters(p => ({...p, [`${y}-${s}`]: true}));
                     }
                     return { ...c, [field]: value };
                 }));
@@ -404,27 +398,23 @@
             }, []);
 
             const removeCourse = useCallback((id) => {
-                if(confirm('למחוק את הקורס לצמיתות?')) {
-                    setCourses(prev => prev.filter(c => c.id !== id));
-                }
+                if(confirm('למחוק את הקורס לצמיתות?')) setCourses(prev => prev.filter(c => c.id !== id));
             }, []);
 
             const resetToken = () => {
-                if(confirm('האם לאפס את נתוני המנהל במחשב זה? תצטרך להזין טוקן מחדש.')) {
+                if(confirm('לאפס מפתח?')) {
                     localStorage.removeItem('enc_gh_token');
                     setIsFirstSetup(true);
-                    alert('הנתונים אופסו.');
+                    alert('המפתח אופס.');
                 }
             };
 
-            // --- Stats ---
             const stats = useMemo(() => {
                 const activeCourses = courses.filter(c => c.active && c.credits > 0);
                 const totalCredits = activeCourses.reduce((sum, c) => sum + Number(c.credits), 0);
                 let weightedSum = 0;
                 activeCourses.forEach(c => weightedSum += Number(c.grade) * Number(c.credits));
                 const average = totalCredits > 0 ? weightedSum / totalCredits : 0;
-                
                 let varianceSum = 0;
                 if (totalCredits > 0) {
                     activeCourses.forEach(c => {
@@ -436,7 +426,6 @@
                 return { totalCredits, average, stdDev, activeCourses, weightedSum };
             }, [courses]);
 
-            // Charts
             const barData = stats.activeCourses.map(c => ({
                 name: c.name.length > 15 ? c.name.substring(0, 15) + '...' : c.name,
                 full: c.name,
@@ -475,7 +464,6 @@
 
             return (
                 <div className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto pb-20">
-                    
                     <header className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
                         <div>
                             <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3 select-none">
@@ -491,20 +479,18 @@
                             </p>
                         </div>
                         <div className="flex items-center gap-3">
-                            <a href="../index.html" ...> className="text-indigo-600 hover:bg-indigo-50 px-4 py-2 rounded-lg font-medium transition-colors">
+                            <a href="../index.html" className="text-indigo-600 hover:bg-indigo-50 px-4 py-2 rounded-lg font-medium transition-colors">
                                 חזרה לפורטל <Icon name="ChevronLeft" className="mr-2" />
                             </a>
                         </div>
                     </header>
 
-                    {/* Login Modal */}
                     {showLogin && (
                         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm" onClick={() => setShowLogin(false)}>
                             <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
                                 <h3 className="text-xl font-bold mb-4 text-center text-slate-800">
                                     {isFirstSetup ? "הגדרה ראשונית למנהל" : "כניסת מנהל מערכת"}
                                 </h3>
-                                
                                 <form onSubmit={handleLogin} className="flex flex-col gap-4">
                                     <input 
                                         type="password" 
@@ -514,21 +500,19 @@
                                         value={inputPassword}
                                         onChange={e => setInputPassword(e.target.value)}
                                     />
-                                    
                                     {isFirstSetup && (
                                         <div className="animate-fade-in space-y-2">
-                                            <p className="text-xs text-slate-500 text-center">פעם ראשונה: הזן את הטוקן של GitHub כדי שנוכל לשמור אותו מוצפן.</p>
+                                            <p className="text-xs text-slate-500 text-center">פעם ראשונה: הזן את הטוקן של GitHub</p>
                                             <input 
                                                 type="password" 
-                                                placeholder="הדבק GitHub Token כאן" 
-                                                className="border border-slate-300 rounded-lg p-3 w-full text-center outline-none focus:border-indigo-500 transition-all text-xs"
+                                                placeholder="GitHub Token" 
+                                                className="border border-slate-300 rounded-lg p-3 w-full text-center outline-none focus:border-indigo-500 text-xs"
                                                 value={inputToken}
                                                 onChange={e => setInputToken(e.target.value)}
                                             />
                                         </div>
                                     )}
-
-                                    <button type="submit" className="bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
+                                    <button type="submit" className="bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 shadow-lg">
                                         {isFirstSetup ? "שמור והתחבר" : "כניסה"}
                                     </button>
                                 </form>
@@ -540,9 +524,7 @@
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
                             <div>
                                 <div className="text-slate-500 text-sm font-medium mb-1">ממוצע משוקלל</div>
-                                <div className={`text-4xl font-bold`} style={{color: getGradeColor(stats.average)}}>
-                                    {stats.average.toFixed(2)}
-                                </div>
+                                <div className={`text-4xl font-bold`} style={{color: getGradeColor(stats.average)}}>{stats.average.toFixed(2)}</div>
                             </div>
                             <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center text-xl">📊</div>
                         </div>
@@ -563,29 +545,24 @@
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        
                         <div className="lg:col-span-7 space-y-4">
                             {isAdmin && (
                                 <div className="sticky top-4 z-10 bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-lg flex justify-between items-center mb-6">
                                     <div className="text-sm text-amber-900">
                                         <p className="font-bold"><i className="fas fa-lock-open ml-2"></i> מצב עריכה פתוח</p>
-                                        <p className="opacity-80">שינויים נשמרים בענן.</p>
+                                        <p className="opacity-80">שינויים נשמרים לכולם</p>
                                     </div>
                                     <div className="flex gap-2">
-                                        <button onClick={resetToken} title="איפוס מפתחות במחשב זה" className="text-amber-500 hover:text-amber-700 p-2">
-                                            <Icon name="Key" />
-                                        </button>
+                                        <button onClick={resetToken} title="איפוס מפתחות" className="text-amber-500 hover:text-amber-700 p-2"><Icon name="Key" /></button>
                                         <button 
                                             onClick={saveToGitHub} 
                                             disabled={isSaving}
                                             className={`text-xs ${isSaving ? 'bg-slate-400' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded-lg font-bold shadow-sm transition-all flex items-center gap-2`}
                                         >
                                             {isSaving ? <Icon name="Refresh" className="animate-spin"/> : <Icon name="Cloud" />}
-                                            {isSaving ? "שומר..." : "שמור שינויים"}
+                                            {isSaving ? "שומר..." : "שמור ב-GitHub"}
                                         </button>
-                                        <button onClick={() => setIsAdmin(false)} className="text-xs bg-white border border-amber-300 text-amber-700 px-3 py-2 rounded-lg hover:bg-amber-100">
-                                            יציאה
-                                        </button>
+                                        <button onClick={() => setIsAdmin(false)} className="text-xs bg-white border border-amber-300 text-amber-700 px-3 py-2 rounded-lg hover:bg-amber-100">יציאה</button>
                                     </div>
                                 </div>
                             )}
@@ -659,10 +636,7 @@
                             ))}
                         </div>
 
-                        {/* Charts */}
                         <div className="lg:col-span-5 space-y-6">
-                            
-                            {/* Bar Chart */}
                             <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
                                 <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 border-b pb-2">
                                     <Icon name="Chart" className="text-indigo-500" />
@@ -687,7 +661,6 @@
                                 </div>
                             </div>
 
-                            {/* Pie Chart */}
                             <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
                                 <h3 className="font-bold text-slate-700 mb-4 border-b pb-2">השפעה על הממוצע (%)</h3>
                                 <div className="h-64">
@@ -713,7 +686,6 @@
                                 </div>
                             </div>
 
-                            {/* Bell Curve */}
                             <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
                                 <h3 className="font-bold text-slate-700 mb-4 border-b pb-2">מיקום יחסי (פעמון)</h3>
                                 <div className="h-64">
