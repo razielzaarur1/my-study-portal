@@ -6,23 +6,17 @@
     <title>מחשבון ציונים - רזיאל</title>
     
     <script>
-        window.onerror = function(msg, url, line, col, error) {
-            document.getElementById('debug-error').style.display = 'block';
-            document.getElementById('debug-content').innerText = 
-                "שגיאה: " + msg + "\n" + "שורה: " + line;
-            return false;
-        };
         window.process = { env: { NODE_ENV: 'production' } };
     </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
-    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.0/recharts.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
+    <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
     
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -42,15 +36,17 @@
         #debug-error {
             display: none; position: fixed; top: 0; left: 0; width: 100%; 
             background: #fee2e2; color: #991b1b; padding: 20px; z-index: 9999;
-            border-bottom: 2px solid #ef4444; font-weight: bold;
+            border-bottom: 2px solid #ef4444; font-weight: bold; text-align: center;
         }
+        .secret-trigger:active { transform: scale(0.95); }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
     
     <div id="debug-error">
-        <h3>התרחשה שגיאה בטעינת הדף:</h3>
-        <pre id="debug-content" style="white-space: pre-wrap; margin-top: 10px; direction: ltr; text-align: left;"></pre>
+        <h3>התרחשה שגיאה בטעינת המערכת</h3>
+        <p id="debug-content" style="direction: ltr; margin-top: 5px;"></p>
+        <button onclick="location.reload()" style="margin-top:10px; background:#991b1b; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">רענן דף</button>
     </div>
 
     <div id="root">
@@ -60,10 +56,19 @@
         </div>
     </div>
 
+    <script>
+        // תפיסת שגיאות גלובלית
+        window.onerror = function(msg, url, line) {
+            document.getElementById('debug-error').style.display = 'block';
+            document.getElementById('debug-content').innerText = msg + " (Line: " + line + ")";
+            document.getElementById('root').style.display = 'none';
+        };
+    </script>
+
     <script type="text/babel">
-        // בדיקת ספריות
-        if (!window.React || !window.ReactDOM || !window.Recharts) {
-            throw new Error("אחת הספריות (React/Recharts) לא נטענה. נסה לרענן (Ctrl+F5).");
+        // וידוא שהספריות נטענו
+        if (!window.React || !window.Recharts) {
+            throw new Error("ספריית Recharts לא נטענה. נסה לרענן את הדף.");
         }
 
         const { useState, useMemo, useCallback, useEffect } = React;
@@ -191,9 +196,8 @@
                         const encryptedToken = localStorage.getItem('enc_gh_token');
                         setIsFirstSetup(!encryptedToken);
                         
-                        // קריאה לקובץ הנתונים מהתיקייה הנוכחית
                         const response = await fetch(LOCAL_FILE_NAME + "?t=" + new Date().getTime());
-                        if (!response.ok) throw new Error("לא ניתן למצוא את קובץ הנתונים (courses.json)");
+                        if (!response.ok) throw new Error("קובץ הנתונים לא נמצא");
                         
                         const globalData = await response.json();
                         const localData = JSON.parse(localStorage.getItem('my_degree_grades') || '{}');
@@ -203,7 +207,7 @@
                         });
                         setCourses(mergedCourses);
                     } catch (err) {
-                        console.error("Backup loaded due to:", err);
+                        console.error("Error loading data:", err);
                         const saved = localStorage.getItem('my_degree_full_backup');
                         if (saved) setCourses(JSON.parse(saved));
                     }
