@@ -233,7 +233,8 @@
                         setIsFirstSetup(!encryptedToken);
 
                         // טעינת הקורסים מהרשת
-                        const response = await fetch(GITHUB_FILE_PATH);
+                       // הוספת חותמת זמן (?t=...) מכריחה את הדפדפן להוריד את הקובץ מחדש
+                        const response = await fetch(GITHUB_FILE_PATH + "?t=" + new Date().getTime());
                         if (!response.ok) throw new Error("Local file not found");
                         const globalData = await response.json();
                         
