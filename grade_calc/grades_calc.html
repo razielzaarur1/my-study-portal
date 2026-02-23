@@ -67,17 +67,16 @@
         };
 
         // --- Firebase Configuration ---
-        // החלף את הפרטים כאן עם פרטי פרויקט הפיירבייס שלך!
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAtGoYZSs3I9Ybg7buqn5M33qUU4USZY0M",
-  authDomain: "study-57a62.firebaseapp.com",
-  projectId: "study-57a62",
-  storageBucket: "study-57a62.firebasestorage.app",
-  messagingSenderId: "773359679310",
-  appId: "1:773359679310:web:6f74c63b1d8e0e05a1101f"
-  };
+        const firebaseConfig = {
+            apiKey: "AIzaSyAtGoYZSs3I9Ybg7buqn5M33qUU4USZY0M",
+            authDomain: "study-57a62.firebaseapp.com",
+            projectId: "study-57a62",
+            storageBucket: "study-57a62.firebasestorage.app",
+            messagingSenderId: "773359679310",
+            appId: "1:773359679310:web:6f74c63b1d8e0e05a1101f"
+        };
         
+        // אתחול פיירבייס בגרסת ה-Compat
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
     </script>
@@ -205,7 +204,7 @@ const firebaseConfig = {
             const [currentUser, setCurrentUser] = useState(null);
             const [savedGrades, setSavedGrades] = useState({});
             const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-            const [showStudentLogin, setShowStudentLogin] = useState(true); // מתחיל ב-true כברירת מחדל
+            const [showStudentLogin, setShowStudentLogin] = useState(true);
             const [studentIdInput, setStudentIdInput] = useState('');
             const [studentNameInput, setStudentNameInput] = useState('');
             const [loginError, setLoginError] = useState('');
@@ -287,7 +286,6 @@ const firebaseConfig = {
                         setShowStudentLogin(false);
                         setIsNewStudent(false);
                     } else {
-                        // User not found, need to create
                         setIsNewStudent(true);
                         setLoginError("תעודת זהות לא נמצאה. אנא הזן שם ליצירת משתמש חדש.");
                     }
