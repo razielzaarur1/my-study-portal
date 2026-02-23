@@ -12,6 +12,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
     <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -57,16 +60,29 @@
     </div>
 
     <script>
-        // תפיסת שגיאות גלובלית
         window.onerror = function(msg, url, line) {
             document.getElementById('debug-error').style.display = 'block';
             document.getElementById('debug-content').innerText = msg + " (Line: " + line + ")";
             document.getElementById('root').style.display = 'none';
         };
+
+        // --- Firebase Configuration ---
+        // החלף את הפרטים כאן עם פרטי פרויקט הפיירבייס שלך!
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAtGoYZSs3I9Ybg7buqn5M33qUU4USZY0M",
+  authDomain: "study-57a62.firebaseapp.com",
+  projectId: "study-57a62",
+  storageBucket: "study-57a62.firebasestorage.app",
+  messagingSenderId: "773359679310",
+  appId: "1:773359679310:web:6f74c63b1d8e0e05a1101f"
+  };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
     </script>
 
     <script type="text/babel">
-        // וידוא שהספריות נטענו
         if (!window.React || !window.Recharts) {
             throw new Error("אחת הספריות לא נטענה (React/Recharts). נסה לרענן את הדף.");
         }
@@ -126,7 +142,8 @@
                 Refresh: "fa-rotate-right",
                 Save: "fa-floppy-disk",
                 Cloud: "fa-cloud-arrow-up",
-                Key: "fa-key"
+                Key: "fa-key",
+                User: "fa-user"
             };
             return <i onClick={onClick} className={`fas ${map[name] || ''} ${className}`}></i>;
         };
@@ -179,72 +196,192 @@
         };
 
         function App() {
+            const [baseCourses, setBaseCourses] = useState([]);
             const [courses, setCourses] = useState(BACKUP_COURSES);
             const [expandedYears, setExpandedYears] = useState({});
             const [expandedSemesters, setExpandedSemesters] = useState({});
+            
+            // Student States
+            const [currentUser, setCurrentUser] = useState(null);
+            const [savedGrades, setSavedGrades] = useState({});
+            const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+            const [showStudentLogin, setShowStudentLogin] = useState(true); // מתחיל ב-true כברירת מחדל
+            const [studentIdInput, setStudentIdInput] = useState('');
+            const [studentNameInput, setStudentNameInput] = useState('');
+            const [loginError, setLoginError] = useState('');
+            const [isNewStudent, setIsNewStudent] = useState(false);
+
+            // Admin States
             const [isAdmin, setIsAdmin] = useState(false);
-            const [showLogin, setShowLogin] = useState(false);
+            const [showAdminLogin, setShowAdminLogin] = useState(false);
             const [inputPassword, setInputPassword] = useState('');
             const [inputToken, setInputToken] = useState('');
             const [isFirstSetup, setIsFirstSetup] = useState(false);
             const [isSaving, setIsSaving] = useState(false);
             const [secretClickCount, setSecretClickCount] = useState(0);
 
+            // Fetch Base Courses (Admin defaults)
             useEffect(() => {
-                const fetchData = async () => {
+                const fetchBaseData = async () => {
                     try {
                         const encryptedToken = localStorage.getItem('enc_gh_token');
                         setIsFirstSetup(!encryptedToken);
                         
-                        // קריאה לקובץ הנתונים מהתיקייה הנוכחית
                         const response = await fetch(LOCAL_FILE_NAME + "?t=" + new Date().getTime());
                         if (!response.ok) throw new Error("קובץ הנתונים לא נמצא");
                         
                         const globalData = await response.json();
-                        const localData = JSON.parse(localStorage.getItem('my_degree_grades') || '{}');
-                        const mergedCourses = globalData.map(course => {
-                            const userCourse = localData[course.id];
-                            return userCourse ? { ...course, grade: userCourse.grade, active: userCourse.active } : course;
-                        });
-                        setCourses(mergedCourses);
+                        setBaseCourses(globalData);
+                        setCourses(globalData);
+
+                        // Check if a user was already logged in
+                        const savedTz = localStorage.getItem('student_tz');
+                        if (savedTz) {
+                            loadStudentData(savedTz, globalData);
+                        }
                     } catch (err) {
                         console.error("Error loading data:", err);
                         const saved = localStorage.getItem('my_degree_full_backup');
-                        if (saved) setCourses(JSON.parse(saved));
+                        if (saved) {
+                            const parsed = JSON.parse(saved);
+                            setBaseCourses(parsed);
+                            setCourses(parsed);
+                        }
                     }
                 };
-                fetchData();
+                fetchBaseData();
             }, []);
 
+            // Check for unsaved changes whenever courses or savedGrades change
             useEffect(() => {
-                if (!isAdmin && courses.length > 1) {
-                    const userGrades = {};
-                    courses.forEach(c => userGrades[c.id] = { grade: c.grade, active: c.active });
-                    localStorage.setItem('my_degree_grades', JSON.stringify(userGrades));
-                    localStorage.setItem('my_degree_full_backup', JSON.stringify(courses));
+                if (!currentUser || isAdmin) return;
+                
+                const currentGradesObj = {};
+                courses.forEach(c => {
+                    currentGradesObj[c.id] = { grade: c.grade, active: c.active };
+                });
+
+                const isDifferent = JSON.stringify(currentGradesObj) !== JSON.stringify(savedGrades);
+                setHasUnsavedChanges(isDifferent);
+            }, [courses, savedGrades, currentUser, isAdmin]);
+
+            const loadStudentData = async (tz, currentBaseCourses = baseCourses) => {
+                try {
+                    const docRef = db.collection("students").doc(tz);
+                    const docSnap = await docRef.get();
+
+                    if (docSnap.exists) {
+                        const data = docSnap.data();
+                        const dbGrades = data.grades || {};
+                        
+                        // Merge db grades into base courses
+                        const mergedCourses = currentBaseCourses.map(course => {
+                            const studentCourse = dbGrades[course.id];
+                            return studentCourse ? { ...course, grade: studentCourse.grade, active: studentCourse.active } : course;
+                        });
+
+                        setSavedGrades(dbGrades);
+                        setCourses(mergedCourses);
+                        setCurrentUser({ tz: tz, name: data.name });
+                        localStorage.setItem('student_tz', tz);
+                        setShowStudentLogin(false);
+                        setIsNewStudent(false);
+                    } else {
+                        // User not found, need to create
+                        setIsNewStudent(true);
+                        setLoginError("תעודת זהות לא נמצאה. אנא הזן שם ליצירת משתמש חדש.");
+                    }
+                } catch (error) {
+                    console.error("Error loading student data:", error);
+                    setLoginError("שגיאה בהתחברות למסד הנתונים.");
                 }
-            }, [courses, isAdmin]);
+            };
+
+            const handleStudentLoginSubmit = async (e) => {
+                e.preventDefault();
+                setLoginError('');
+
+                if (!studentIdInput || studentIdInput.length < 5) {
+                    setLoginError('אנא הזן תעודת זהות תקינה');
+                    return;
+                }
+
+                if (isNewStudent) {
+                    if (!studentNameInput) {
+                        setLoginError('אנא הזן שם');
+                        return;
+                    }
+                    try {
+                        const newGrades = {};
+                        baseCourses.forEach(c => newGrades[c.id] = { grade: 0, active: false });
+                        
+                        await db.collection("students").doc(studentIdInput).set({
+                            name: studentNameInput,
+                            grades: newGrades
+                        });
+                        
+                        await loadStudentData(studentIdInput);
+                    } catch (error) {
+                        setLoginError('שגיאה ביצירת משתמש.');
+                    }
+                } else {
+                    await loadStudentData(studentIdInput);
+                }
+            };
+
+            const saveStudentGrades = async () => {
+                if (!currentUser) return;
+                setIsSaving(true);
+                try {
+                    const currentGradesObj = {};
+                    courses.forEach(c => {
+                        currentGradesObj[c.id] = { grade: c.grade, active: c.active };
+                    });
+
+                    await db.collection("students").doc(currentUser.tz).update({
+                        grades: currentGradesObj
+                    });
+
+                    setSavedGrades(currentGradesObj);
+                    setHasUnsavedChanges(false);
+                } catch (error) {
+                    alert("שגיאה בשמירת הנתונים");
+                } finally {
+                    setIsSaving(false);
+                }
+            };
+
+            const handleLogout = () => {
+                setCurrentUser(null);
+                setSavedGrades({});
+                localStorage.removeItem('student_tz');
+                setCourses(baseCourses);
+                setStudentIdInput('');
+                setStudentNameInput('');
+                setIsNewStudent(false);
+                setShowStudentLogin(true);
+            };
 
             const handleSecretClick = () => {
                 if (isAdmin) return;
                 setSecretClickCount(prev => prev + 1);
                 if (window.clickTimeout) clearTimeout(window.clickTimeout);
                 window.clickTimeout = setTimeout(() => setSecretClickCount(0), 1000);
-                if (secretClickCount + 1 >= 3) { setShowLogin(true); setSecretClickCount(0); setInputPassword(''); }
+                if (secretClickCount + 1 >= 3) { setShowAdminLogin(true); setSecretClickCount(0); setInputPassword(''); }
             };
 
-            const handleLogin = (e) => {
+            const handleAdminLogin = (e) => {
                 e.preventDefault();
                 if (inputPassword !== ADMIN_PASSWORD) return alert('סיסמה שגויה');
                 if (isFirstSetup) {
                     if (inputToken.length < 10) return alert('אנא הזן GitHub Token תקין');
                     const encrypted = simpleEncrypt(inputToken, ADMIN_PASSWORD);
-                    if (encrypted) { localStorage.setItem('enc_gh_token', encrypted); alert('נשמר!'); setIsAdmin(true); setShowLogin(false); setIsFirstSetup(false); }
+                    if (encrypted) { localStorage.setItem('enc_gh_token', encrypted); alert('נשמר!'); setIsAdmin(true); setShowAdminLogin(false); setIsFirstSetup(false); }
                     else alert('שגיאה בהצפנה');
                 } else {
                     const encrypted = localStorage.getItem('enc_gh_token');
                     const decrypted = simpleDecrypt(encrypted, ADMIN_PASSWORD);
-                    if (decrypted && decrypted.startsWith('gh')) { setIsAdmin(true); setShowLogin(false); }
+                    if (decrypted && decrypted.startsWith('gh')) { setIsAdmin(true); setShowAdminLogin(false); }
                     else if(confirm('טוקן לא תקין. להגדיר מחדש?')) setIsFirstSetup(true);
                 }
             };
@@ -266,9 +403,12 @@
                     const putRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_API_PATH}`, {
                         method: "PUT",
                         headers: { "Authorization": `token ${realToken}`, "Content-Type": "application/json" },
-                        body: JSON.stringify({ message: "Admin update", content: content, sha: getData.sha })
+                        body: JSON.stringify({ message: "Admin update courses base", content: content, sha: getData.sha })
                     });
-                    if (putRes.ok) alert("נשמר בהצלחה!"); else throw new Error("שגיאה בשמירה");
+                    if (putRes.ok) {
+                        alert("הקורסים הבסיסיים נשמרו בהצלחה!");
+                        setBaseCourses(cleanCourses);
+                    } else throw new Error("שגיאה בשמירה");
                 } catch (error) { alert("שגיאה: " + error.message); } finally { setIsSaving(false); }
             };
 
@@ -313,14 +453,66 @@
                             </h1>
                             <p className="text-slate-500 mt-1">{isAdmin ? <span className="text-amber-600 font-bold animate-pulse">מצב מנהל פעיל</span> : "ניהול תואר וניתוח נתונים"}</p>
                         </div>
-                        <div className="flex items-center gap-3"><a href="../index.html" className="text-indigo-600 hover:bg-indigo-50 px-4 py-2 rounded-lg font-medium transition-colors">חזרה לפורטל <Icon name="ChevronLeft" className="mr-2" /></a></div>
+                        <div className="flex items-center gap-3">
+                            {currentUser && !isAdmin && (
+                                <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200">
+                                    <span className="text-slate-700 font-medium">שלום, {currentUser.name}</span>
+                                    <button onClick={handleLogout} className="text-indigo-600 hover:text-indigo-800 text-sm flex items-center gap-1 border-r pr-4 border-slate-200">
+                                        <Icon name="User" /> החלף משתמש
+                                    </button>
+                                </div>
+                            )}
+                            <a href="../index.html" className="text-indigo-600 hover:bg-indigo-50 px-4 py-2 rounded-lg font-medium transition-colors">חזרה לפורטל <Icon name="ChevronLeft" className="mr-2" /></a>
+                        </div>
                     </header>
 
-                    {showLogin && (
-                        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm" onClick={() => setShowLogin(false)}>
+                    {/* Student Login Modal */}
+                    {showStudentLogin && !isAdmin && (
+                        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 backdrop-blur-sm">
+                            <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
+                                <div className="text-center mb-6">
+                                    <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-600 text-2xl">
+                                        <Icon name="User" />
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-slate-800">התחברות למערכת</h3>
+                                    <p className="text-slate-500 text-sm mt-1">הכנס תעודת זהות כדי לטעון את הציונים שלך</p>
+                                </div>
+                                
+                                <form onSubmit={handleStudentLoginSubmit} className="flex flex-col gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">תעודת זהות</label>
+                                        <input type="text" autoFocus placeholder="הזן ת.ז" className="w-full border border-slate-300 rounded-lg p-3 text-right outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all" value={studentIdInput} onChange={e => setStudentIdInput(e.target.value)} disabled={isNewStudent} />
+                                    </div>
+                                    
+                                    {isNewStudent && (
+                                        <div className="animate-fade-in">
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">שם מלא (משתמש חדש)</label>
+                                            <input type="text" autoFocus placeholder="הזן שם מלא" className="w-full border border-slate-300 rounded-lg p-3 text-right outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all" value={studentNameInput} onChange={e => setStudentNameInput(e.target.value)} />
+                                        </div>
+                                    )}
+
+                                    {loginError && <p className="text-rose-500 text-sm bg-rose-50 p-2 rounded">{loginError}</p>}
+                                    
+                                    <button type="submit" className="bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 shadow-md transition-colors mt-2">
+                                        {isNewStudent ? "צור חשבון והיכנס" : "היכנס"}
+                                    </button>
+                                    
+                                    {isNewStudent && (
+                                        <button type="button" onClick={() => {setIsNewStudent(false); setLoginError('');}} className="text-slate-500 text-sm hover:text-slate-700">
+                                            חזור אחורה
+                                        </button>
+                                    )}
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Admin Login Modal */}
+                    {showAdminLogin && (
+                        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm" onClick={() => setShowAdminLogin(false)}>
                             <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
                                 <h3 className="text-xl font-bold mb-4 text-center text-slate-800">{isFirstSetup ? "הגדרה ראשונית למנהל" : "כניסת מנהל מערכת"}</h3>
-                                <form onSubmit={handleLogin} className="flex flex-col gap-4">
+                                <form onSubmit={handleAdminLogin} className="flex flex-col gap-4">
                                     <input type="password" autoFocus placeholder="סיסמת כניסה" className="border border-slate-300 rounded-lg p-3 text-center outline-none focus:border-indigo-500 transition-all" value={inputPassword} onChange={e => setInputPassword(e.target.value)} />
                                     {isFirstSetup && <div className="animate-fade-in space-y-2"><p className="text-xs text-slate-500 text-center">פעם ראשונה: הזן את הטוקן של GitHub</p><input type="password" placeholder="GitHub Token" className="border border-slate-300 rounded-lg p-3 w-full text-center outline-none focus:border-indigo-500 text-xs" value={inputToken} onChange={e => setInputToken(e.target.value)} /></div>}
                                     <button type="submit" className="bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 shadow-lg">{isFirstSetup ? "שמור והתחבר" : "כניסה"}</button>
@@ -337,7 +529,26 @@
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                         <div className="lg:col-span-7 space-y-4">
-                            {isAdmin && <div className="sticky top-4 z-10 bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-lg flex justify-between items-center mb-6"><div className="text-sm text-amber-900"><p className="font-bold"><i className="fas fa-lock-open ml-2"></i> מצב עריכה פתוח</p></div><div className="flex gap-2"><button onClick={resetToken} className="text-amber-500 hover:text-amber-700 p-2"><Icon name="Key" /></button><button onClick={saveToGitHub} disabled={isSaving} className={`text-xs ${isSaving ? 'bg-slate-400' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded-lg font-bold shadow-sm transition-all flex items-center gap-2`}>{isSaving ? <Icon name="Refresh" className="animate-spin"/> : <Icon name="Cloud" />}{isSaving ? "שומר..." : "שמור"}</button><button onClick={() => setIsAdmin(false)} className="text-xs bg-white border border-amber-300 text-amber-700 px-3 py-2 rounded-lg hover:bg-amber-100">יציאה</button></div></div>}
+                            
+                            {/* Student Unsaved Changes Banner */}
+                            {currentUser && !isAdmin && hasUnsavedChanges && (
+                                <div className="sticky top-4 z-10 bg-indigo-50 border border-indigo-200 p-4 rounded-xl shadow-lg flex justify-between items-center mb-6 animate-pulse">
+                                    <div className="text-sm text-indigo-900 flex items-center gap-2">
+                                        <Icon name="Save" className="text-indigo-600" />
+                                        <p className="font-bold">ביצעת שינויים שטרם נשמרו. האם תרצה לשמור בענן?</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={saveStudentGrades} disabled={isSaving} className={`text-xs ${isSaving ? 'bg-slate-400' : 'bg-indigo-600 hover:bg-indigo-700'} text-white px-5 py-2 rounded-lg font-bold shadow-sm transition-all flex items-center gap-2`}>
+                                            {isSaving ? <Icon name="Refresh" className="animate-spin"/> : <Icon name="Cloud" />}
+                                            {isSaving ? "שומר..." : "שמור שינויים"}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Admin Controls Banner */}
+                            {isAdmin && <div className="sticky top-4 z-10 bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-lg flex justify-between items-center mb-6"><div className="text-sm text-amber-900"><p className="font-bold"><i className="fas fa-lock-open ml-2"></i> מצב עריכת מבנה קורסים (GitHub)</p></div><div className="flex gap-2"><button onClick={resetToken} className="text-amber-500 hover:text-amber-700 p-2"><Icon name="Key" /></button><button onClick={saveToGitHub} disabled={isSaving} className={`text-xs ${isSaving ? 'bg-slate-400' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded-lg font-bold shadow-sm transition-all flex items-center gap-2`}>{isSaving ? <Icon name="Refresh" className="animate-spin"/> : <Icon name="Cloud" />}{isSaving ? "שומר..." : "שמור"}</button><button onClick={() => setIsAdmin(false)} className="text-xs bg-white border border-amber-300 text-amber-700 px-3 py-2 rounded-lg hover:bg-amber-100">יציאה</button></div></div>}
+                            
                             {YEARS.map(year => (
                                 <div key={year} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                                     <div className="p-4 bg-slate-50 cursor-pointer hover:bg-slate-100 flex justify-between items-center select-none border-b border-slate-100" onClick={() => toggleYear(year)}>
