@@ -251,19 +251,24 @@
                 fetchBaseData();
             }, []);
 
-            // Check for unsaved changes whenever courses or savedGrades change
+            // 1. בדיקת שינויים חכמה
             useEffect(() => {
-                if (!currentUser || isAdmin) return;
+                if (!currentUser || isAdmin) {
+                    setHasUnsavedChanges(false);
+                    return;
+                }
                 
                 const currentGradesObj = {};
                 courses.forEach(c => {
-                    currentGradesObj[c.id] = { grade: c.grade, active: c.active };
+                    // המרה קשיחה למספר ובוליאני כדי למנוע בעיות של טקסט מול מספר
+                    currentGradesObj[c.id] = { grade: Number(c.grade) || 0, active: !!c.active };
                 });
 
                 const isDifferent = JSON.stringify(currentGradesObj) !== JSON.stringify(savedGrades);
                 setHasUnsavedChanges(isDifferent);
             }, [courses, savedGrades, currentUser, isAdmin]);
 
+            // 2. טעינת הנתונים וסנכרון הבסיס מול הפיירבייס
             const loadStudentData = async (tz, currentBaseCourses = baseCourses) => {
                 try {
                     const docRef = db.collection("students").doc(tz);
@@ -273,13 +278,21 @@
                         const data = docSnap.data();
                         const dbGrades = data.grades || {};
                         
-                        // Merge db grades into base courses
+                        const normalizedSavedGrades = {};
+                        
+                        // מזגו נתונים תוך בניית אובייקט "שמור" מדויק
                         const mergedCourses = currentBaseCourses.map(course => {
                             const studentCourse = dbGrades[course.id];
-                            return studentCourse ? { ...course, grade: studentCourse.grade, active: studentCourse.active } : course;
+                            const grade = studentCourse ? Number(studentCourse.grade) : 0;
+                            const active = studentCourse ? !!studentCourse.active : false;
+                            
+                            // גם אם הקורס חדש ולא היה בפיירבייס, נוסיף אותו למאגר השמור כדי שהמערכת לא תחשוב שזה שינוי של הסטודנט
+                            normalizedSavedGrades[course.id] = { grade, active };
+                            
+                            return { ...course, grade, active };
                         });
 
-                        setSavedGrades(dbGrades);
+                        setSavedGrades(normalizedSavedGrades); // שומרים את האובייקט המנורמל
                         setCourses(mergedCourses);
                         setCurrentUser({ tz: tz, name: data.name });
                         localStorage.setItem('student_tz', tz);
@@ -327,13 +340,14 @@
                 }
             };
 
+            // 3. שמירת הנתונים בפיירבייס בפורמט התקין
             const saveStudentGrades = async () => {
                 if (!currentUser) return;
                 setIsSaving(true);
                 try {
                     const currentGradesObj = {};
                     courses.forEach(c => {
-                        currentGradesObj[c.id] = { grade: c.grade, active: c.active };
+                        currentGradesObj[c.id] = { grade: Number(c.grade) || 0, active: !!c.active };
                     });
 
                     await db.collection("students").doc(currentUser.tz).update({
