@@ -15,10 +15,10 @@
             --card-bg: #ffffff;
             
             /* צבעים מותאמים להנדסת חשמל */
-            --math: #3b82f6;   /* כחול */
-            --code: #10b981;   /* ירוק */
-            --phys: #f59e0b;   /* כתום */
-            --digital: #8b5cf6; /* סגול */
+            --math: #3b82f6;   
+            --code: #10b981;   
+            --phys: #f59e0b;   
+            --digital: #8b5cf6; 
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -65,6 +65,8 @@
             transition: 0.3s;
             flex: 1;
             max-width: 100px;
+            text-decoration: none;
+            text-align: center;
         }
 
         .tab-btn.active {
@@ -110,6 +112,7 @@
             gap: 15px;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
         }
 
         .card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
@@ -148,80 +151,6 @@
             gap: 5px;
         }
 
-        /* מודל */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 100;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(3px);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .modal-overlay.open { display: flex; opacity: 1; }
-
-        .modal {
-            background: white;
-            width: 90%;
-            max-width: 400px;
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            transform: translateY(20px);
-            transition: transform 0.3s;
-            position: relative;
-        }
-
-        .modal-overlay.open .modal { transform: translateY(0); }
-
-        .modal-header { text-align: center; margin-bottom: 25px; }
-        .modal-title { font-size: 1.5rem; font-weight: 700; color: var(--text); margin-bottom: 5px; }
-        .modal-subtitle { color: #64748b; font-size: 0.95rem; }
-
-        .modal-options { display: flex; flex-direction: column; gap: 15px; }
-
-        .option-btn {
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            border-radius: 12px;
-            text-decoration: none;
-            transition: 0.2s;
-            border: 1px solid #e2e8f0;
-        }
-
-        .option-btn:active { transform: scale(0.98); }
-
-        .opt-site { background: #f8fafc; color: var(--text); }
-        .opt-site .opt-icon { background: #e2e8f0; color: #475569; }
-        
-        .opt-notebook { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-color: #bfdbfe; color: #1e40af; }
-        .opt-notebook .opt-icon { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; }
-
-        .opt-icon {
-            width: 40px; height: 40px;
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem;
-            margin-left: 15px;
-            flex-shrink: 0;
-        }
-
-        .opt-text h4 { margin: 0; font-size: 1rem; }
-        .opt-text p { margin: 3px 0 0; font-size: 0.8rem; opacity: 0.8; }
-
-        .close-btn {
-            position: absolute;
-            top: 15px; left: 15px;
-            background: none; border: none;
-            font-size: 1.2rem; color: #94a3b8;
-            cursor: pointer;
-        }
-
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
     </style>
 </head>
@@ -244,7 +173,7 @@
         <div class="semester-label">סמסטר א'</div>
         <div class="grid">
             
-            <div class="card code" onclick="openModal('grades')">
+            <a href="grade_calc/grades_main.html" class="card code">
                 <div class="card-header">
                     <div class="icon-box"><i class="fas fa-calculator"></i></div>
                     <div>
@@ -253,9 +182,9 @@
                     </div>
                 </div>
                 <div class="tap-hint">לכניסה <i class="fas fa-chevron-left"></i></div>
-            </div>
+            </a>
             
-            <div class="card math" onclick="openModal('infi')">
+            <a href="Year_1/Semester_A/Infi_1/infi1_main.html" class="card math">
                 <div class="card-header">
                     <div class="icon-box"><i class="fas fa-infinity"></i></div>
                     <div>
@@ -264,9 +193,9 @@
                     </div>
                 </div>
                 <div class="tap-hint">לתרגול <i class="fas fa-chevron-left"></i></div>
-            </div>
+            </a>
 
-            <div class="card math" onclick="openModal('linear')">
+            <a href="Year_1/Semester_A/Linear_Algebra/linear_main.html" class="card math">
                 <div class="card-header">
                     <div class="icon-box"><i class="fas fa-calculator"></i></div>
                     <div>
@@ -275,9 +204,9 @@
                     </div>
                 </div>
                 <div class="tap-hint">לתרגול <i class="fas fa-chevron-left"></i></div>
-            </div>
+            </a>
 
-            <div class="card code" onclick="openModal('c')">
+            <a href="Year_1/Semester_A/Intro_CS/c_main.html" class="card code">
                 <div class="card-header">
                     <div class="icon-box"><i class="fas fa-code"></i></div>
                     <div>
@@ -286,9 +215,9 @@
                     </div>
                 </div>
                 <div class="tap-hint">לנוסחאות <i class="fas fa-chevron-left"></i></div>
-            </div>
+            </a>
 
-            <div class="card phys" onclick="openModal('physics')">
+            <a href="Year_1/Semester_A/Physics_1/physics1_main.html" class="card phys">
                 <div class="card-header">
                     <div class="icon-box"><i class="fas fa-atom"></i></div>
                     <div>
@@ -297,9 +226,9 @@
                     </div>
                 </div>
                 <div class="tap-hint">לנוסחאות <i class="fas fa-chevron-left"></i></div>
-            </div>
+            </a>
 
-            <div class="card digital" onclick="openModal('digital')">
+            <a href="Year_1/Semester_A/Digital_Systems/digital_main.html" class="card digital">
                 <div class="card-header">
                     <div class="icon-box"><i class="fas fa-microchip"></i></div>
                     <div>
@@ -308,7 +237,7 @@
                     </div>
                 </div>
                 <div class="tap-hint">ללמידה <i class="fas fa-chevron-left"></i></div>
-            </div>
+            </a>
 
         </div>
     </div>
@@ -323,93 +252,13 @@
         <i class="fas fa-hard-hat fa-2x"></i><br>בבנייה
     </div>
 
-    <div class="modal-overlay" id="courseModal" onclick="closeModal(event)">
-        <div class="modal">
-            <button class="close-btn" onclick="closeModal(event, true)">&times;</button>
-            <div class="modal-header">
-                <h2 class="modal-title" id="modalTitle">שם הקורס</h2>
-                <div class="modal-subtitle">בחר מקור לימוד</div>
-            </div>
-            <div class="modal-options" id="modalOptions"></div>
-        </div>
-    </div>
-
     <script>
-        const coursesData = {
-            'grades': {
-                title: 'מחשבון ציונים מתקדם',
-                siteUrl: 'grade_calc/grades_calc.html',
-                siteDesc: 'מעבר למערכת חישוב ציונים וגרפים',
-                aiUrl: '#', 
-                aiDesc: 'אין צורך ב-AI כאן'
-            },
-            'infi': {
-                title: 'אינפי 1',
-                siteUrl: 'Year_1/Semester_A/Infi_1/infi1_app.html',
-                siteDesc: 'מאגר שאלות ופתרונות',
-                aiUrl: 'https://notebooklm.google.com/notebook/d8805bdc-8f74-4b6d-bdaf-f70833110acc',
-                aiDesc: 'צ\'אט חכם וסיכום הרצאות'
-            },
-            'linear': {
-                title: 'אלגברה לינארית',
-                siteUrl: 'Year_1/Semester_A/Linear_Algebra/linear_app.html',
-                siteDesc: 'שאלות ממבחנים',
-                aiUrl: 'https://notebooklm.google.com/notebook/7b4bac6c-febf-40b1-aee6-bdf642fed5e8',
-                aiDesc: 'צ\'אט חכם וסיכום הרצאות'
-            },
-            'c': {
-                title: 'מבוא למדעי המחשב',
-                siteUrl: 'Year_1/Semester_A/Intro_CS/c_formulas.html',
-                siteDesc: 'דף נוסחאות וסינטקס',
-                aiUrl: 'https://notebooklm.google.com/notebook/f2676ac2-3a69-466d-acd1-382e6f5e6364',
-                aiDesc: 'עזרה בקוד והסברים'
-            },
-            'physics': {
-                title: 'פיזיקה 1',
-                siteUrl: 'Year_1/Semester_A/Physics_1/physics1_formulas.html',
-                siteDesc: 'דף נוסחאות מסודר',
-                aiUrl: 'https://notebooklm.google.com/notebook/4b474851-3937-4b48-a3fa-18cb71cebd2a',
-                aiDesc: 'פתרון בעיות והסברים'
-            },
-            'digital': {
-                title: 'מערכות ספרתיות',
-                siteUrl: 'Year_1/Semester_A/Digital_Systems/digital_portal.html',
-                siteDesc: 'פורטל הקורס',
-                aiUrl: 'https://notebooklm.google.com/notebook/cfbd64d0-3fe1-4b18-b709-03bdb8d9625d',
-                aiDesc: 'צ\'אט חכם על החומר'
-            }
-        };
-
         function showYear(year) {
             document.querySelectorAll('.year-section').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById('year-' + year).classList.add('active');
             event.target.classList.add('active');
         }
-
-        const modal = document.getElementById('courseModal');
-        const optionsContainer = document.getElementById('modalOptions');
-
-        function openModal(id) {
-            const data = coursesData[id];
-            if(!data) return;
-            document.getElementById('modalTitle').innerText = data.title;
-            optionsContainer.innerHTML = '';
-            
-            // כפתור לאתר/מחשבון
-            if (data.siteUrl) {
-                optionsContainer.innerHTML += `<a href="${data.siteUrl}" class="option-btn opt-site"><div class="opt-text" style="flex:1"><h4>כניסה למערכת / חומרים</h4><p>${data.siteDesc}</p></div><div class="opt-icon"><i class="far fa-file-alt"></i></div></a>`;
-            }
-            
-            // כפתור AI (מוצג רק אם יש קישור אמיתי)
-            if (data.aiUrl && data.aiUrl !== '#') {
-                optionsContainer.innerHTML += `<a href="${data.aiUrl}" target="_blank" class="option-btn opt-notebook"><div class="opt-text" style="flex:1"><h4>המחברת החכמה (AI)</h4><p>${data.aiDesc}</p></div><div class="opt-icon"><i class="fas fa-sparkles"></i></div></a>`;
-            }
-            
-            modal.classList.add('open');
-        }
-
-        function closeModal(e, force) { if (force || e.target === modal) modal.classList.remove('open'); }
     </script>
 </body>
 </html>
