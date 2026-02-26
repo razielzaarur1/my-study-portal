@@ -26,7 +26,6 @@
             --code-color: #10b981;
             --phys-color: #f59e0b;
             --digital-color: #8b5cf6;
-            --utility-color: #6366f1;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Rubik', sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -46,12 +45,14 @@
             display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 0 auto 20px;
             background: rgba(255, 255, 255, 0.1); padding: 10px 20px; border-radius: 20px; backdrop-filter: blur(5px);
         }
-        .auth-bar span { font-weight: 500; font-size: 0.9rem; }
-        .auth-btn {
+        .auth-bar span { font-weight: 500; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+        .auth-buttons { display: flex; gap: 10px; }
+        .auth-btn, .settings-btn {
             background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 8px 16px;
             border-radius: 12px; cursor: pointer; font-weight: 600; font-family: inherit; transition: 0.3s;
         }
-        .auth-btn:hover { background: white; color: var(--primary); }
+        .settings-btn { padding: 8px 12px; }
+        .auth-btn:hover, .settings-btn:hover { background: white; color: var(--primary); }
 
         header h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -1px; }
         header p { font-size: 1.1rem; opacity: 0.9; font-weight: 300; }
@@ -85,7 +86,6 @@
         .code { --accent: var(--code-color); --bg-soft: #ecfdf5; }
         .phys { --accent: var(--phys-color); --bg-soft: #fffbeb; }
         .digital { --accent: var(--digital-color); --bg-soft: #f3e8ff; }
-        .util { --accent: var(--utility-color); --bg-soft: #eef2ff; }
         .stats { --accent: #ec4899; --bg-soft: #fce7f3; } 
 
         /* Semester Accordion */
@@ -108,14 +108,16 @@
             z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(8px);
         }
         .modal-box {
-            background: white; width: 90%; max-width: 400px; padding: 40px 30px; border-radius: 24px;
+            background: white; width: 90%; max-width: 400px; padding: 30px; border-radius: 24px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); position: relative; text-align: center;
         }
+        .modal-close { position: absolute; top: 15px; left: 15px; cursor: pointer; color: var(--secondary); font-size: 1.2rem; }
         .modal-title { margin-bottom: 20px; font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
         .form-group { margin-bottom: 15px; text-align: right; }
         .form-group label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 5px; color: var(--text-muted); }
         .form-control { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 1rem; font-family: inherit; }
         .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .submit-btn { width: 100%; background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         .submit-btn:hover { background: var(--primary-dark); }
         .error-msg { color: #ef4444; font-size: 0.85rem; text-align: center; margin-top: 10px; display: none; }
@@ -133,7 +135,10 @@
     <header>
         <div class="auth-bar">
             <span id="user-greeting"><i class="fas fa-user-circle"></i> טוען...</span>
-            <button class="auth-btn" id="auth-main-btn" onclick="handleLogout()" style="display:none;">התנתק</button>
+            <div class="auth-buttons">
+                <button class="settings-btn" id="settings-main-btn" style="display:none;" onclick="openSettingsModal()"><i class="fas fa-cog"></i></button>
+                <button class="auth-btn" id="auth-main-btn" onclick="handleLogout()" style="display:none;">התנתק</button>
+            </div>
         </div>
         <h1>הנדסת חשמל</h1>
         <p>רזיאל זערור • פורטל למידה אישי</p>
@@ -143,7 +148,6 @@
         <div class="modal-box">
             <div style="font-size: 3rem; color: var(--primary); margin-bottom: 15px;"><i class="fas fa-user-graduate"></i></div>
             <h2 class="modal-title" id="modal-title-text">התחברות למערכת</h2>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">הפורטל סגור למשתמשים רשומים בלבד.</p>
             
             <div class="form-group">
                 <label>תעודת זהות</label>
@@ -153,7 +157,25 @@
             <div id="register-fields">
                 <div class="form-group">
                     <label>שם מלא</label>
-                    <input type="text" id="name-input" class="form-control" placeholder="הזן שם להרשמה" autocomplete="off">
+                    <input type="text" id="name-input" class="form-control" placeholder="הזן שם" autocomplete="off">
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>שנה נוכחית</label>
+                        <select id="year-input" class="form-control">
+                            <option value="A">שנה א'</option>
+                            <option value="B">שנה ב'</option>
+                            <option value="C">שנה ג'</option>
+                            <option value="D">שנה ד'</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>סמסטר נוכחי</label>
+                        <select id="semester-input" class="form-control">
+                            <option value="1">סמסטר א'</option>
+                            <option value="2">סמסטר ב'</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -165,6 +187,36 @@
                     חזור אחורה
                 </button>
             </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal-box">
+            <i class="fas fa-times modal-close" onclick="closeSettingsModal()"></i>
+            <div style="font-size: 2.5rem; color: var(--secondary); margin-bottom: 10px;"><i class="fas fa-cog"></i></div>
+            <h2 class="modal-title">הגדרות חשבון</h2>
+            
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>שנה נוכחית</label>
+                    <select id="set-year-input" class="form-control">
+                        <option value="A">שנה א'</option>
+                        <option value="B">שנה ב'</option>
+                        <option value="C">שנה ג'</option>
+                        <option value="D">שנה ד'</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>סמסטר נוכחי</label>
+                    <select id="set-semester-input" class="form-control">
+                        <option value="1">סמסטר א'</option>
+                        <option value="2">סמסטר ב'</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="error-msg" id="settings-error"></div>
+            <button class="submit-btn" id="submit-settings-btn" onclick="saveSettings()">שמור שינויים</button>
         </div>
     </div>
 
@@ -187,18 +239,10 @@
                     <div class="card-info">
                         <h3>ממוצע נוכחי</h3>
                         <p id="avg-display-text" style="font-size: 1.2rem; font-weight: 700; color: #ec4899; margin-top:3px;">--</p>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">לחץ למעבר למחשבון</p>
                     </div>
                     <i class="fas fa-chevron-left chevron-left"></i>
                 </div>
-
-                <a href="grade_calc/grades_main.html" class="card util">
-                    <div class="card-icon"><i class="fas fa-calculator"></i></div>
-                    <div class="card-info">
-                        <h3>מחשבון ציונים</h3>
-                        <p>מעקב, עדכון ציונים וניתוח גרפים</p>
-                    </div>
-                    <i class="fas fa-chevron-left chevron-left"></i>
-                </a>
             </div>
         </div>
 
@@ -227,20 +271,46 @@
             </div>
         </div>
 
-        <div id="year-B" class="year-section"><div class="empty-state">טרם התחיל...</div></div>
+        <div id="year-B" class="year-section">
+            <div class="semester-container collapsed" id="sem-B-1">
+                <div class="semester-header" onclick="toggleSemester('sem-B-1')">
+                    <div class="semester-title"><i class="fas fa-calendar-alt"></i><span>סמסטר א'</span></div>
+                    <i class="fas fa-chevron-up toggle-icon"></i>
+                </div>
+                <div class="semester-content"><div class="empty-state">המידע יעודכן בהמשך</div></div>
+            </div>
+            <div class="semester-container collapsed" id="sem-B-2">
+                <div class="semester-header" onclick="toggleSemester('sem-B-2')">
+                    <div class="semester-title"><i class="fas fa-calendar-check"></i><span>סמסטר ב'</span></div>
+                    <i class="fas fa-chevron-up toggle-icon"></i>
+                </div>
+                <div class="semester-content"><div class="empty-state">המידע יעודכן בהמשך</div></div>
+            </div>
+        </div>
+        
         <div id="year-C" class="year-section"><div class="empty-state">בבנייה...</div></div>
         <div id="year-D" class="year-section"><div class="empty-state">בבנייה...</div></div>
     </main>
 
     <script>
         // UI Functions
-        function showYear(yearId, btn) {
+        function showYear(yearId, btn = null) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+            if(btn) {
+                btn.classList.add('active');
+            } else {
+                const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(`'${yearId}'`));
+                if(targetBtn) targetBtn.classList.add('active');
+            }
             document.querySelectorAll('.year-section').forEach(s => s.classList.remove('active'));
-            document.getElementById('year-' + yearId).classList.add('active');
+            const yearSec = document.getElementById('year-' + yearId);
+            if(yearSec) yearSec.classList.add('active');
         }
-        function toggleSemester(id) { document.getElementById(id).classList.toggle('collapsed'); }
+        
+        function toggleSemester(id) { 
+            const el = document.getElementById(id);
+            if(el) el.classList.toggle('collapsed'); 
+        }
 
         // --- Firebase Auth & Logic ---
         const firebaseConfig = {
@@ -256,6 +326,7 @@
 
         let baseCourses = [];
         let isRegisterMode = false;
+        let currentUserData = null;
 
         // Initialize App
         async function initApp() {
@@ -277,14 +348,30 @@
                 const doc = await db.collection("students").doc(tz).get();
                 if (doc.exists) {
                     const data = doc.data();
+                    currentUserData = data;
                     localStorage.setItem('student_tz', tz);
                     
                     document.getElementById('user-greeting').innerHTML = `<i class="fas fa-user-circle"></i> שלום, ${data.name}`;
                     document.getElementById('auth-main-btn').style.display = 'inline-block';
+                    document.getElementById('settings-main-btn').style.display = 'inline-block';
                     document.getElementById('login-modal').style.display = 'none';
 
                     calculateAverage(data.grades);
                     document.getElementById('average-card').style.display = 'flex';
+
+                    // Open User's default Year and Semester
+                    if(data.year) {
+                        showYear(data.year);
+                        if(data.semester) {
+                            // Collapse all semesters first
+                            document.querySelectorAll('.semester-container').forEach(c => c.classList.add('collapsed'));
+                            // Open specific one
+                            const semId = `sem-${data.year}-${data.semester}`;
+                            const semDiv = document.getElementById(semId);
+                            if(semDiv) semDiv.classList.remove('collapsed');
+                        }
+                    }
+
                 } else {
                     handleLogout(); 
                 }
@@ -314,13 +401,15 @@
 
         function handleLogout() {
             localStorage.removeItem('student_tz');
+            currentUserData = null;
             document.getElementById('user-greeting').innerHTML = `<i class="fas fa-user-circle"></i> טוען...`;
             document.getElementById('auth-main-btn').style.display = 'none';
+            document.getElementById('settings-main-btn').style.display = 'none';
             document.getElementById('average-card').style.display = 'none';
             openLoginModal();
         }
 
-        // Modal Logic
+        // --- Modals Logic ---
         function openLoginModal() { 
             document.getElementById('login-modal').style.display = 'flex'; 
             isRegisterMode = false;
@@ -356,12 +445,20 @@
             try {
                 if(isRegisterMode) {
                     const name = document.getElementById('name-input').value.trim();
+                    const year = document.getElementById('year-input').value;
+                    const semester = document.getElementById('semester-input').value;
+
                     if(!name) { btn.disabled=false; btn.innerText="צור חשבון והיכנס"; return showError("אנא הזן שם."); }
                     
                     const newGrades = {};
                     baseCourses.forEach(c => newGrades[c.id] = { grade: 0, active: false });
                     
-                    await db.collection("students").doc(tz).set({ name: name, grades: newGrades });
+                    await db.collection("students").doc(tz).set({ 
+                        name: name, 
+                        year: year,
+                        semester: semester,
+                        grades: newGrades 
+                    });
                     await loadUserData(tz);
                 } else {
                     const doc = await db.collection("students").doc(tz).get();
@@ -378,6 +475,41 @@
             }
             btn.disabled = false;
             btn.innerText = isRegisterMode ? "צור חשבון והיכנס" : "היכנס";
+        }
+
+        // --- Settings Logic ---
+        function openSettingsModal() {
+            if(currentUserData) {
+                document.getElementById('set-year-input').value = currentUserData.year || 'A';
+                document.getElementById('set-semester-input').value = currentUserData.semester || '1';
+            }
+            document.getElementById('settings-error').style.display = 'none';
+            document.getElementById('settings-modal').style.display = 'flex';
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').style.display = 'none';
+        }
+
+        async function saveSettings() {
+            const tz = localStorage.getItem('student_tz');
+            if(!tz) return;
+
+            const btn = document.getElementById('submit-settings-btn');
+            btn.innerText = "שומר..."; btn.disabled = true;
+
+            const y = document.getElementById('set-year-input').value;
+            const s = document.getElementById('set-semester-input').value;
+
+            try {
+                await db.collection("students").doc(tz).update({ year: y, semester: s });
+                await loadUserData(tz); // Reloads and updates UI automatically
+                closeSettingsModal();
+            } catch(e) {
+                document.getElementById('settings-error').innerText = "שגיאה בשמירת נתונים";
+                document.getElementById('settings-error').style.display = 'block';
+            }
+            btn.innerText = "שמור שינויים"; btn.disabled = false;
         }
 
         // Start
