@@ -36,11 +36,7 @@
             text-align: right;
             direction: rtl;
         }
-        #debug-error {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; 
-            background: #fee2e2; color: #991b1b; padding: 20px; z-index: 9999;
-            border-bottom: 2px solid #ef4444; font-weight: bold; text-align: center;
-        }
+        #debug-error { display: none; position: fixed; top: 0; left: 0; width: 100%; background: #fee2e2; color: #991b1b; padding: 20px; z-index: 9999; border-bottom: 2px solid #ef4444; font-weight: bold; text-align: center; }
         .secret-trigger:active { transform: scale(0.95); }
     </style>
 </head>
@@ -66,7 +62,6 @@
             document.getElementById('root').style.display = 'none';
         };
 
-        // --- Firebase Configuration ---
         const firebaseConfig = {
             apiKey: "AIzaSyAtGoYZSs3I9Ybg7buqn5M33qUU4USZY0M",
             authDomain: "study-57a62.firebaseapp.com",
@@ -75,8 +70,6 @@
             messagingSenderId: "773359679310",
             appId: "1:773359679310:web:6f74c63b1d8e0e05a1101f"
         };
-        
-        // אתחול פיירבייס בגרסת ה-Compat
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
     </script>
@@ -87,13 +80,8 @@
         }
 
         const { useState, useMemo, useCallback, useEffect } = React;
-        const { 
-            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-            ResponsiveContainer, Cell, PieChart, Pie, ComposedChart, 
-            Area, Scatter, ReferenceLine, LabelList 
-        } = window.Recharts;
+        const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie, ComposedChart, Area, Scatter, ReferenceLine, LabelList } = window.Recharts;
 
-        // --- הגדרות ---
         const GITHUB_OWNER = "razielzaarur1";
         const GITHUB_REPO = "my-study-portal";
         const LOCAL_FILE_NAME = "courses.json"; 
@@ -101,49 +89,14 @@
         const ADMIN_PASSWORD = "0408"; 
 
         const YEARS = [1, 2, 3, 4];
-        const SEMESTERS = [
-            { key: 'A', label: "סמסטר א'" },
-            { key: 'B', label: "סמסטר ב'" }
-        ];
+        const SEMESTERS = [{ key: 'A', label: "סמסטר א'" }, { key: 'B', label: "סמסטר ב'" }];
+        const BACKUP_COURSES = [{ id: 1, year: 1, semester: 'A', name: 'טוען...', grade: 0, credits: 0, active: false }];
 
-        const BACKUP_COURSES = [
-            { id: 1, year: 1, semester: 'A', name: 'טוען קורסים...', grade: 0, credits: 0, active: false }
-        ];
-
-        // --- הצפנה ---
-        const simpleEncrypt = (text, secret) => {
-            try {
-                let result = '';
-                for(let i = 0; i < text.length; i++) result += String.fromCharCode(text.charCodeAt(i) ^ secret.charCodeAt(i % secret.length));
-                return btoa(result);
-            } catch (e) { return null; }
-        };
-
-        const simpleDecrypt = (encoded, secret) => {
-            try {
-                let text = atob(encoded);
-                let result = '';
-                for(let i = 0; i < text.length; i++) result += String.fromCharCode(text.charCodeAt(i) ^ secret.charCodeAt(i % secret.length));
-                return result;
-            } catch (e) { return null; }
-        };
+        const simpleEncrypt = (text, secret) => { try { let result = ''; for(let i = 0; i < text.length; i++) result += String.fromCharCode(text.charCodeAt(i) ^ secret.charCodeAt(i % secret.length)); return btoa(result); } catch (e) { return null; } };
+        const simpleDecrypt = (encoded, secret) => { try { let text = atob(encoded); let result = ''; for(let i = 0; i < text.length; i++) result += String.fromCharCode(text.charCodeAt(i) ^ secret.charCodeAt(i % secret.length)); return result; } catch (e) { return null; } };
 
         const Icon = ({ name, className = "", onClick }) => {
-            const map = {
-                ChevronDown: "fa-chevron-down",
-                ChevronLeft: "fa-chevron-left",
-                Plus: "fa-plus",
-                Trash: "fa-trash-can",
-                Calc: "fa-calculator",
-                Chart: "fa-chart-pie",
-                Lock: "fa-lock",
-                Unlock: "fa-lock-open",
-                Refresh: "fa-rotate-right",
-                Save: "fa-floppy-disk",
-                Cloud: "fa-cloud-arrow-up",
-                Key: "fa-key",
-                User: "fa-user"
-            };
+            const map = { ChevronDown: "fa-chevron-down", ChevronLeft: "fa-chevron-left", Plus: "fa-plus", Trash: "fa-trash-can", Calc: "fa-calculator", Chart: "fa-chart-pie", Lock: "fa-lock", Unlock: "fa-lock-open", Refresh: "fa-rotate-right", Save: "fa-floppy-disk", Cloud: "fa-cloud-arrow-up", Key: "fa-key", User: "fa-user" };
             return <i onClick={onClick} className={`fas ${map[name] || ''} ${className}`}></i>;
         };
 
@@ -199,18 +152,10 @@
             const [courses, setCourses] = useState(BACKUP_COURSES);
             const [expandedYears, setExpandedYears] = useState({});
             const [expandedSemesters, setExpandedSemesters] = useState({});
-            
-            // Student States
             const [currentUser, setCurrentUser] = useState(null);
             const [savedGrades, setSavedGrades] = useState({});
             const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-            const [showStudentLogin, setShowStudentLogin] = useState(true);
-            const [studentIdInput, setStudentIdInput] = useState('');
-            const [studentNameInput, setStudentNameInput] = useState('');
-            const [loginError, setLoginError] = useState('');
-            const [isNewStudent, setIsNewStudent] = useState(false);
-
-            // Admin States
+            const [isCheckingAuth, setIsCheckingAuth] = useState(true);
             const [isAdmin, setIsAdmin] = useState(false);
             const [showAdminLogin, setShowAdminLogin] = useState(false);
             const [inputPassword, setInputPassword] = useState('');
@@ -219,7 +164,6 @@
             const [isSaving, setIsSaving] = useState(false);
             const [secretClickCount, setSecretClickCount] = useState(0);
 
-            // Fetch Base Courses (Admin defaults)
             useEffect(() => {
                 const fetchBaseData = async () => {
                     try {
@@ -233,145 +177,68 @@
                         setBaseCourses(globalData);
                         setCourses(globalData);
 
-                        // Check if a user was already logged in
                         const savedTz = localStorage.getItem('student_tz');
                         if (savedTz) {
-                            loadStudentData(savedTz, globalData);
+                            await loadStudentData(savedTz, globalData);
+                        } else {
+                            setIsCheckingAuth(false);
                         }
                     } catch (err) {
                         console.error("Error loading data:", err);
-                        const saved = localStorage.getItem('my_degree_full_backup');
-                        if (saved) {
-                            const parsed = JSON.parse(saved);
-                            setBaseCourses(parsed);
-                            setCourses(parsed);
-                        }
+                        setIsCheckingAuth(false);
                     }
                 };
                 fetchBaseData();
             }, []);
 
-            // 1. בדיקת שינויים חכמה
             useEffect(() => {
-                if (!currentUser || isAdmin) {
-                    setHasUnsavedChanges(false);
-                    return;
-                }
-                
+                if (!currentUser || isAdmin) { setHasUnsavedChanges(false); return; }
                 const currentGradesObj = {};
-                courses.forEach(c => {
-                    // המרה קשיחה למספר ובוליאני כדי למנוע בעיות של טקסט מול מספר
-                    currentGradesObj[c.id] = { grade: Number(c.grade) || 0, active: !!c.active };
-                });
-
+                courses.forEach(c => currentGradesObj[c.id] = { grade: Number(c.grade) || 0, active: !!c.active });
                 const isDifferent = JSON.stringify(currentGradesObj) !== JSON.stringify(savedGrades);
                 setHasUnsavedChanges(isDifferent);
             }, [courses, savedGrades, currentUser, isAdmin]);
 
-            // 2. טעינת הנתונים וסנכרון הבסיס מול הפיירבייס
             const loadStudentData = async (tz, currentBaseCourses = baseCourses) => {
                 try {
                     const docRef = db.collection("students").doc(tz);
                     const docSnap = await docRef.get();
-
                     if (docSnap.exists) {
                         const data = docSnap.data();
                         const dbGrades = data.grades || {};
-                        
                         const normalizedSavedGrades = {};
                         
-                        // מזגו נתונים תוך בניית אובייקט "שמור" מדויק
                         const mergedCourses = currentBaseCourses.map(course => {
                             const studentCourse = dbGrades[course.id];
                             const grade = studentCourse ? Number(studentCourse.grade) : 0;
                             const active = studentCourse ? !!studentCourse.active : false;
-                            
-                            // גם אם הקורס חדש ולא היה בפיירבייס, נוסיף אותו למאגר השמור כדי שהמערכת לא תחשוב שזה שינוי של הסטודנט
                             normalizedSavedGrades[course.id] = { grade, active };
-                            
                             return { ...course, grade, active };
                         });
 
-                        setSavedGrades(normalizedSavedGrades); // שומרים את האובייקט המנורמל
+                        setSavedGrades(normalizedSavedGrades);
                         setCourses(mergedCourses);
                         setCurrentUser({ tz: tz, name: data.name });
-                        localStorage.setItem('student_tz', tz);
-                        setShowStudentLogin(false);
-                        setIsNewStudent(false);
-                    } else {
-                        setIsNewStudent(true);
-                        setLoginError("תעודת זהות לא נמצאה. אנא הזן שם ליצירת משתמש חדש.");
                     }
-                } catch (error) {
-                    console.error("Error loading student data:", error);
-                    setLoginError("שגיאה בהתחברות למסד הנתונים.");
-                }
+                } catch (error) { console.error("Error loading student data:", error); }
+                setIsCheckingAuth(false);
             };
 
-            const handleStudentLoginSubmit = async (e) => {
-                e.preventDefault();
-                setLoginError('');
-
-                if (!studentIdInput || studentIdInput.length < 5) {
-                    setLoginError('אנא הזן תעודת זהות תקינה');
-                    return;
-                }
-
-                if (isNewStudent) {
-                    if (!studentNameInput) {
-                        setLoginError('אנא הזן שם');
-                        return;
-                    }
-                    try {
-                        const newGrades = {};
-                        baseCourses.forEach(c => newGrades[c.id] = { grade: 0, active: false });
-                        
-                        await db.collection("students").doc(studentIdInput).set({
-                            name: studentNameInput,
-                            grades: newGrades
-                        });
-                        
-                        await loadStudentData(studentIdInput);
-                    } catch (error) {
-                        setLoginError('שגיאה ביצירת משתמש.');
-                    }
-                } else {
-                    await loadStudentData(studentIdInput);
-                }
-            };
-
-            // 3. שמירת הנתונים בפיירבייס בפורמט התקין
             const saveStudentGrades = async () => {
                 if (!currentUser) return;
                 setIsSaving(true);
                 try {
                     const currentGradesObj = {};
-                    courses.forEach(c => {
-                        currentGradesObj[c.id] = { grade: Number(c.grade) || 0, active: !!c.active };
-                    });
-
-                    await db.collection("students").doc(currentUser.tz).update({
-                        grades: currentGradesObj
-                    });
-
+                    courses.forEach(c => currentGradesObj[c.id] = { grade: Number(c.grade) || 0, active: !!c.active });
+                    await db.collection("students").doc(currentUser.tz).update({ grades: currentGradesObj });
                     setSavedGrades(currentGradesObj);
                     setHasUnsavedChanges(false);
-                } catch (error) {
-                    alert("שגיאה בשמירת הנתונים");
-                } finally {
-                    setIsSaving(false);
-                }
+                } catch (error) { alert("שגיאה בשמירת הנתונים"); } finally { setIsSaving(false); }
             };
 
             const handleLogout = () => {
-                setCurrentUser(null);
-                setSavedGrades({});
                 localStorage.removeItem('student_tz');
-                setCourses(baseCourses);
-                setStudentIdInput('');
-                setStudentNameInput('');
-                setIsNewStudent(false);
-                setShowStudentLogin(true);
+                window.location.href = '../index.html';
             };
 
             const handleSecretClick = () => {
@@ -401,36 +268,21 @@
             const saveToGitHub = async () => {
                 setIsSaving(true);
                 try {
-                    const encryptedToken = localStorage.getItem('enc_gh_token');
-                    const realToken = simpleDecrypt(encryptedToken, ADMIN_PASSWORD);
+                    const realToken = simpleDecrypt(localStorage.getItem('enc_gh_token'), ADMIN_PASSWORD);
                     if (!realToken) throw new Error("כשל בפענוח הטוקן");
-                    
                     const getRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_API_PATH}`, { headers: { "Authorization": `token ${realToken}` } });
                     if (!getRes.ok) throw new Error("שגיאת גישה ל-GitHub");
                     const getData = await getRes.json();
-                    
                     const cleanCourses = courses.map(c => ({ id: c.id, year: c.year, semester: c.semester, name: c.name, credits: c.credits, grade: 0, active: false }));
                     const content = btoa(unescape(encodeURIComponent(JSON.stringify(cleanCourses, null, 2))));
-                    
-                    const putRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_API_PATH}`, {
-                        method: "PUT",
-                        headers: { "Authorization": `token ${realToken}`, "Content-Type": "application/json" },
-                        body: JSON.stringify({ message: "Admin update courses base", content: content, sha: getData.sha })
-                    });
-                    if (putRes.ok) {
-                        alert("הקורסים הבסיסיים נשמרו בהצלחה!");
-                        setBaseCourses(cleanCourses);
-                    } else throw new Error("שגיאה בשמירה");
+                    const putRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_API_PATH}`, { method: "PUT", headers: { "Authorization": `token ${realToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ message: "Admin update courses base", content: content, sha: getData.sha }) });
+                    if (putRes.ok) { alert("הקורסים הבסיסיים נשמרו בהצלחה!"); setBaseCourses(cleanCourses); } else throw new Error("שגיאה בשמירה");
                 } catch (error) { alert("שגיאה: " + error.message); } finally { setIsSaving(false); }
             };
 
             const toggleYear = (y) => setExpandedYears(p => ({ ...p, [y]: !p[y] }));
             const toggleSemester = (y, s) => setExpandedSemesters(p => ({ ...p, [`${y}-${s}`]: !p[`${y}-${s}`] }));
-            const updateCourse = useCallback((id, f, v) => setCourses(p => p.map(c => c.id !== id ? c : (
-                (f === 'year' || f === 'semester') ? 
-                (setExpandedYears(e=>({...e, [f==='year'?v:c.year]:true})), setExpandedSemesters(e=>({...e, [`${f==='year'?v:c.year}-${f==='semester'?v:c.semester}`]:true})), {...c, [f]: v}) : 
-                {...c, [f]: v}
-            ))), []);
+            const updateCourse = useCallback((id, f, v) => setCourses(p => p.map(c => c.id !== id ? c : ( (f === 'year' || f === 'semester') ? (setExpandedYears(e=>({...e, [f==='year'?v:c.year]:true})), setExpandedSemesters(e=>({...e, [`${f==='year'?v:c.year}-${f==='semester'?v:c.semester}`]:true})), {...c, [f]: v}) : {...c, [f]: v} ))), []);
             const addCourse = useCallback((y, s) => { setCourses(p => [...p, { id: p.length>0?Math.max(...p.map(c=>c.id))+1:1, year: y, semester: s, name: 'קורס חדש', grade: 0, credits: 3.5, active: true }]); setExpandedYears(e=>({...e, [y]:true})); setExpandedSemesters(e=>({...e, [`${y}-${s}`]:true})); }, []);
             const removeCourse = useCallback((id) => { if(confirm('למחוק?')) setCourses(p => p.filter(c => c.id !== id)); }, []);
             const resetToken = () => { if(confirm('לאפס מפתח?')) { localStorage.removeItem('enc_gh_token'); setIsFirstSetup(true); alert('אופס.'); } };
@@ -455,6 +307,25 @@
                 return { curve, points };
             }, [stats.average, stats.stdDev, stats.activeCourses]);
 
+            if (isCheckingAuth) {
+                return <div className="flex justify-center items-center h-screen"><i className="fas fa-spinner fa-spin text-4xl text-indigo-500"></i></div>;
+            }
+
+            // Redirect unauthenticated non-admin users to homepage
+            if (!currentUser && !isAdmin && !showAdminLogin) {
+                return (
+                    <div className="flex flex-col justify-center items-center h-screen bg-slate-50 gap-4">
+                        <div className="text-6xl text-slate-300 mb-2"><Icon name="Lock" /></div>
+                        <h2 className="text-2xl font-bold text-slate-700">האזור מוגבל למשתמשים מחוברים</h2>
+                        <p className="text-slate-500">אנא חזור לעמוד הראשי והתחבר למערכת.</p>
+                        <a href="../index.html" className="mt-4 px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-lg">
+                            חזרה למסך הבית <Icon name="ChevronLeft" className="mr-2" />
+                        </a>
+                        <div className="mt-10 opacity-10 cursor-pointer" onClick={handleSecretClick}>...</div>
+                    </div>
+                );
+            }
+
             return (
                 <div className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto pb-20">
                     <header className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -469,8 +340,8 @@
                             {currentUser && !isAdmin && (
                                 <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200">
                                     <span className="text-slate-700 font-medium">שלום, {currentUser.name}</span>
-                                    <button onClick={handleLogout} className="text-indigo-600 hover:text-indigo-800 text-sm flex items-center gap-1 border-r pr-4 border-slate-200">
-                                        <Icon name="User" /> החלף משתמש
+                                    <button onClick={handleLogout} className="text-rose-500 hover:text-rose-700 text-sm flex items-center gap-1 border-r pr-4 border-slate-200">
+                                        התנתק
                                     </button>
                                 </div>
                             )}
@@ -478,48 +349,6 @@
                         </div>
                     </header>
 
-                    {/* Student Login Modal */}
-                    {showStudentLogin && !isAdmin && (
-                        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 backdrop-blur-sm">
-                            <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
-                                <div className="text-center mb-6">
-                                    <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-600 text-2xl">
-                                        <Icon name="User" />
-                                    </div>
-                                    <h3 className="text-2xl font-bold text-slate-800">התחברות למערכת</h3>
-                                    <p className="text-slate-500 text-sm mt-1">הכנס תעודת זהות כדי לטעון את הציונים שלך</p>
-                                </div>
-                                
-                                <form onSubmit={handleStudentLoginSubmit} className="flex flex-col gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">תעודת זהות</label>
-                                        <input type="text" autoFocus placeholder="הזן ת.ז" className="w-full border border-slate-300 rounded-lg p-3 text-right outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all" value={studentIdInput} onChange={e => setStudentIdInput(e.target.value)} disabled={isNewStudent} />
-                                    </div>
-                                    
-                                    {isNewStudent && (
-                                        <div className="animate-fade-in">
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">שם מלא (משתמש חדש)</label>
-                                            <input type="text" autoFocus placeholder="הזן שם מלא" className="w-full border border-slate-300 rounded-lg p-3 text-right outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all" value={studentNameInput} onChange={e => setStudentNameInput(e.target.value)} />
-                                        </div>
-                                    )}
-
-                                    {loginError && <p className="text-rose-500 text-sm bg-rose-50 p-2 rounded">{loginError}</p>}
-                                    
-                                    <button type="submit" className="bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 shadow-md transition-colors mt-2">
-                                        {isNewStudent ? "צור חשבון והיכנס" : "היכנס"}
-                                    </button>
-                                    
-                                    {isNewStudent && (
-                                        <button type="button" onClick={() => {setIsNewStudent(false); setLoginError('');}} className="text-slate-500 text-sm hover:text-slate-700">
-                                            חזור אחורה
-                                        </button>
-                                    )}
-                                </form>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Admin Login Modal */}
                     {showAdminLogin && (
                         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm" onClick={() => setShowAdminLogin(false)}>
                             <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
@@ -541,24 +370,12 @@
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                         <div className="lg:col-span-7 space-y-4">
-                            
-                            {/* Student Unsaved Changes Banner */}
                             {currentUser && !isAdmin && hasUnsavedChanges && (
                                 <div className="sticky top-4 z-10 bg-indigo-50 border border-indigo-200 p-4 rounded-xl shadow-lg flex justify-between items-center mb-6 animate-pulse">
-                                    <div className="text-sm text-indigo-900 flex items-center gap-2">
-                                        <Icon name="Save" className="text-indigo-600" />
-                                        <p className="font-bold">ביצעת שינויים שטרם נשמרו. האם תרצה לשמור בענן?</p>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button onClick={saveStudentGrades} disabled={isSaving} className={`text-xs ${isSaving ? 'bg-slate-400' : 'bg-indigo-600 hover:bg-indigo-700'} text-white px-5 py-2 rounded-lg font-bold shadow-sm transition-all flex items-center gap-2`}>
-                                            {isSaving ? <Icon name="Refresh" className="animate-spin"/> : <Icon name="Cloud" />}
-                                            {isSaving ? "שומר..." : "שמור שינויים"}
-                                        </button>
-                                    </div>
+                                    <div className="text-sm text-indigo-900 flex items-center gap-2"><Icon name="Save" className="text-indigo-600" /><p className="font-bold">ביצעת שינויים שטרם נשמרו.</p></div>
+                                    <button onClick={saveStudentGrades} disabled={isSaving} className={`text-xs ${isSaving ? 'bg-slate-400' : 'bg-indigo-600 hover:bg-indigo-700'} text-white px-5 py-2 rounded-lg font-bold shadow-sm transition-all flex items-center gap-2`}>{isSaving ? <Icon name="Refresh" className="animate-spin"/> : <Icon name="Cloud" />}{isSaving ? "שומר..." : "שמור שינויים"}</button>
                                 </div>
                             )}
-
-                            {/* Admin Controls Banner */}
                             {isAdmin && <div className="sticky top-4 z-10 bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-lg flex justify-between items-center mb-6"><div className="text-sm text-amber-900"><p className="font-bold"><i className="fas fa-lock-open ml-2"></i> מצב עריכת מבנה קורסים (GitHub)</p></div><div className="flex gap-2"><button onClick={resetToken} className="text-amber-500 hover:text-amber-700 p-2"><Icon name="Key" /></button><button onClick={saveToGitHub} disabled={isSaving} className={`text-xs ${isSaving ? 'bg-slate-400' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded-lg font-bold shadow-sm transition-all flex items-center gap-2`}>{isSaving ? <Icon name="Refresh" className="animate-spin"/> : <Icon name="Cloud" />}{isSaving ? "שומר..." : "שמור"}</button><button onClick={() => setIsAdmin(false)} className="text-xs bg-white border border-amber-300 text-amber-700 px-3 py-2 rounded-lg hover:bg-amber-100">יציאה</button></div></div>}
                             
                             {YEARS.map(year => (
@@ -598,7 +415,6 @@
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
-
     </script>
 </body>
 </html>
