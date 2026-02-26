@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>מחשבון ציונים - רזיאל</title>
-    
+    <script>
+        window.history.replaceState(null, '', '/');
+    </script>
     <script>
         window.process = { env: { NODE_ENV: 'production' } };
     </script>
@@ -311,19 +313,10 @@
                 return <div className="flex justify-center items-center h-screen"><i className="fas fa-spinner fa-spin text-4xl text-indigo-500"></i></div>;
             }
 
-            // Redirect unauthenticated non-admin users to homepage
+            // זריקה אוטומטית החוצה לעמוד הראשי במידה והמשתמש לא מחובר או שהוא לא מנהל
             if (!currentUser && !isAdmin && !showAdminLogin) {
-                return (
-                    <div className="flex flex-col justify-center items-center h-screen bg-slate-50 gap-4">
-                        <div className="text-6xl text-slate-300 mb-2"><Icon name="Lock" /></div>
-                        <h2 className="text-2xl font-bold text-slate-700">האזור מוגבל למשתמשים מחוברים</h2>
-                        <p className="text-slate-500">אנא חזור לעמוד הראשי והתחבר למערכת.</p>
-                        <a href="../index.html" className="mt-4 px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-lg">
-                            חזרה למסך הבית <Icon name="ChevronLeft" className="mr-2" />
-                        </a>
-                        <div className="mt-10 opacity-10 cursor-pointer" onClick={handleSecretClick}>...</div>
-                    </div>
-                );
+                window.location.href = '../index.html';
+                return null;
             }
 
             return (
