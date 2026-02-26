@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>הנדסת חשמל - רזיאל</title>
+    <script>
+        window.history.replaceState(null, '', '/');
+    </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
@@ -85,7 +88,7 @@
         .phys { --accent: var(--phys-color); --bg-soft: #fffbeb; }
         .digital { --accent: var(--digital-color); --bg-soft: #f3e8ff; }
         .util { --accent: var(--utility-color); --bg-soft: #eef2ff; }
-        .stats { --accent: #ec4899; --bg-soft: #fce7f3; } /* Pink for average */
+        .stats { --accent: #ec4899; --bg-soft: #fce7f3; } 
 
         /* Semester Accordion */
         .semester-container { margin-bottom: 25px; background: var(--card-bg); border-radius: 24px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid rgba(255,255,255,0.6); }
@@ -103,16 +106,15 @@
 
         /* Modal Styles */
         .modal-overlay {
-            display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8);
-            z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);
+            display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95);
+            z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(8px);
         }
         .modal-box {
-            background: white; width: 90%; max-width: 400px; padding: 30px; border-radius: 24px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); position: relative;
+            background: white; width: 90%; max-width: 400px; padding: 40px 30px; border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); position: relative; text-align: center;
         }
-        .modal-close { position: absolute; top: 15px; left: 15px; cursor: pointer; color: var(--secondary); font-size: 1.2rem; }
-        .modal-title { text-align: center; margin-bottom: 20px; font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
-        .form-group { margin-bottom: 15px; }
+        .modal-title { margin-bottom: 20px; font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
+        .form-group { margin-bottom: 15px; text-align: right; }
         .form-group label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 5px; color: var(--text-muted); }
         .form-control { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 1rem; font-family: inherit; }
         .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
@@ -132,8 +134,8 @@
 
     <header>
         <div class="auth-bar">
-            <span id="user-greeting"><i class="fas fa-user-circle"></i> אורח</span>
-            <button class="auth-btn" id="auth-main-btn" onclick="openLoginModal()">התחברות</button>
+            <span id="user-greeting"><i class="fas fa-user-circle"></i> טוען...</span>
+            <button class="auth-btn" id="auth-main-btn" onclick="handleLogout()" style="display:none;">התנתק</button>
         </div>
         <h1>הנדסת חשמל</h1>
         <p>רזיאל זערור • פורטל למידה אישי</p>
@@ -141,8 +143,9 @@
 
     <div class="modal-overlay" id="login-modal">
         <div class="modal-box">
-            <i class="fas fa-times modal-close" onclick="closeLoginModal()"></i>
+            <div style="font-size: 3rem; color: var(--primary); margin-bottom: 15px;"><i class="fas fa-user-graduate"></i></div>
             <h2 class="modal-title" id="modal-title-text">התחברות למערכת</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">הפורטל סגור למשתמשים רשומים בלבד.</p>
             
             <div class="form-group">
                 <label>תעודת זהות</label>
@@ -177,7 +180,6 @@
     </div>
 
     <main class="main-content">
-        
         <div class="quick-tools">
             <div class="section-label"><i class="fas fa-tools"></i> אזור אישי וכלים</div>
             <div class="grid">
@@ -260,13 +262,15 @@
         // Initialize App
         async function initApp() {
             try {
-                // Fetch course structure to know credits
                 const res = await fetch('grade_calc/courses.json?t=' + new Date().getTime());
                 baseCourses = await res.json();
                 
                 const tz = localStorage.getItem('student_tz');
-                if (tz) await loadUserData(tz);
-                
+                if (tz) {
+                    await loadUserData(tz);
+                } else {
+                    openLoginModal();
+                }
             } catch(e) { console.error("Error initializing:", e); }
         }
 
@@ -277,17 +281,14 @@
                     const data = doc.data();
                     localStorage.setItem('student_tz', tz);
                     
-                    // Update Header
                     document.getElementById('user-greeting').innerHTML = `<i class="fas fa-user-circle"></i> שלום, ${data.name}`;
-                    const authBtn = document.getElementById('auth-main-btn');
-                    authBtn.innerText = "התנתק";
-                    authBtn.onclick = handleLogout;
+                    document.getElementById('auth-main-btn').style.display = 'inline-block';
+                    document.getElementById('login-modal').style.display = 'none';
 
-                    // Calculate Average
                     calculateAverage(data.grades);
                     document.getElementById('average-card').style.display = 'flex';
                 } else {
-                    handleLogout(); // Invalid TZ
+                    handleLogout(); 
                 }
             } catch(e) { console.error("Error loading user:", e); }
         }
@@ -315,11 +316,10 @@
 
         function handleLogout() {
             localStorage.removeItem('student_tz');
-            document.getElementById('user-greeting').innerHTML = `<i class="fas fa-user-circle"></i> אורח`;
-            const authBtn = document.getElementById('auth-main-btn');
-            authBtn.innerText = "התחברות";
-            authBtn.onclick = openLoginModal;
+            document.getElementById('user-greeting').innerHTML = `<i class="fas fa-user-circle"></i> טוען...`;
+            document.getElementById('auth-main-btn').style.display = 'none';
             document.getElementById('average-card').style.display = 'none';
+            openLoginModal();
         }
 
         // Modal Logic
@@ -327,10 +327,6 @@
             document.getElementById('login-modal').style.display = 'flex'; 
             isRegisterMode = false;
             updateModalUI();
-        }
-        function closeLoginModal() { 
-            document.getElementById('login-modal').style.display = 'none'; 
-            document.getElementById('auth-error').style.display = 'none';
         }
         
         function toggleRegister() {
@@ -342,7 +338,7 @@
         function updateModalUI() {
             document.getElementById('register-fields').style.display = isRegisterMode ? 'block' : 'none';
             document.getElementById('toggle-reg-btn').style.display = isRegisterMode ? 'inline-block' : 'none';
-            document.getElementById('modal-title-text').innerText = isRegisterMode ? 'יצירת משתמש חדש' : 'התחברות למערכת';
+            document.getElementById('modal-title-text').innerText = isRegisterMode ? 'יצירת חשבון' : 'התחברות למערכת';
             document.getElementById('submit-auth-btn').innerText = isRegisterMode ? 'צור חשבון והיכנס' : 'היכנס';
         }
 
@@ -369,14 +365,12 @@
                     
                     await db.collection("students").doc(tz).set({ name: name, grades: newGrades });
                     await loadUserData(tz);
-                    closeLoginModal();
                 } else {
                     const doc = await db.collection("students").doc(tz).get();
                     if(doc.exists) {
                         await loadUserData(tz);
-                        closeLoginModal();
                     } else {
-                        showError("משתמש לא קיים. אנא הרשם.");
+                        showError("משתמש לא קיים. אנא הרשם כדי להיכנס.");
                         isRegisterMode = true;
                         updateModalUI();
                     }
